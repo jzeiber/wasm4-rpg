@@ -376,7 +376,7 @@ void StateGameOverworld::Draw()
 
     // bottom menu bar
 	*DRAW_COLORS=m_gamedata->m_selectedmenu==0 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
-	blitSub(spriteitem,0,SCREEN_SIZE-16,16,16,(7*16),(0*16),spriteitemWidth,BLIT_1BPP);	// save icon
+	blitSub(spriteitem,0,SCREEN_SIZE-16,16,16,(7*16),(0*16),spriteitemWidth,BLIT_1BPP);	    // save icon
     *DRAW_COLORS=m_gamedata->m_selectedmenu==1 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
 	blitSub(spriteitem,16,SCREEN_SIZE-16,16,16,(2*16),(0*16),spriteitemWidth,BLIT_1BPP);	// journal icon
     *DRAW_COLORS=m_gamedata->m_selectedmenu==2 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);

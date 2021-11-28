@@ -118,19 +118,6 @@ void StateGameMap::Draw()
         }
     }
 
-    // TODO - overlay icon on quest locations
-    /*
-    const int64_t tlx=m_gamedata->m_map.WrapCoordinate(m_x-(SCREEN_SIZE/2));
-    const int64_t tly=m_gamedata->m_map.WrapCoordinate(x_y-(SCREEN_SIZE/2));
-    for(int i=0; i<MAX_QUESTS; i++)
-    {
-        if(m_gamedata->m_quests[i].GetActive()==true)
-        {
-            *DRAW_COLORS=(PALETTE_WHITE << 4);
-            //blitSub(spriteitem,,,16,16,(3*16),(12*16),spriteitemWidth,spriteitemFlags);
-        }
-    }
-    */
     for(int i=0; i<MAX_QUESTS; i++)
     {
         if(dq[i][0]>-1 && dq[i][1]>-1)

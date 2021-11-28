@@ -11,7 +11,6 @@ public:
 
     void SetCustomFont(IFont *font);
     void SetSystemFont();
-    //void SetCustomFont(uint8_t *customsprites, const int16_t spritesheetwidth, const int8_t charwidth, const int8_t charheight);
 
     void Print(const char *text, const int16_t x, const int16_t y, const int16_t len) const;
     void PrintWrapped(const char *text, const int16_t x, const int16_t y, const int16_t len, const int16_t maxwidth) const;
@@ -20,12 +19,6 @@ public:
     int16_t LineHeight() const;
 
 private:
-    /*
-    int8_t m_charwidth;
-    int8_t m_charheight;
-    uint8_t *m_customsprites;
-    int16_t m_spritesheetwidth;
-    */
     IFont *m_font;
 
     void PutChar(const char c, const int16_t x, const int16_t y) const;

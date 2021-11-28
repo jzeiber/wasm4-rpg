@@ -10,11 +10,11 @@ void GenerateTownName(const uint64_t seed, char *name, const int16_t len)
     const int8_t prefixcount=2;
     const int8_t directioncount=4;
     const int8_t basecount=23;
-    const int8_t suffixcount=10;
+    const int8_t suffixcount=11;
     static char *prefix[]={{"Olde"},{"New"}};
     static char *direction[]={{"North"},{"East"},{"South"},{"West"}};
     static char *base[]={{"Bogo"},{"Breeze"},{"Bridge"},{"Bright"},{"Eagle"},{"Ever"},{"Feather"},{"Flower"},{"Fox"},{"Haver"},{"Living"},{"Moss"},{"Nettle"},{"Pine"},{"Pinker"},{"Plump"},{"River"},{"Rock"},{"Stock"},{"Sun"},{"Turtle"},{"Whistle"},{"Wood"}};
-    static char *suffix[]={{"boro"},{"burg"},{"dale"},{"field"},{"ford"},{"ham"},{"thorpe"},{"ton"},{"view"},{"ville"}};
+    static char *suffix[]={{"boro"},{"burg"},{"bury"},{"dale"},{"field"},{"ford"},{"ham"},{"thorpe"},{"ton"},{"view"},{"ville"}};
 
     r.Seed(seed);
 

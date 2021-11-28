@@ -20,28 +20,10 @@ void TextPrinter::SetCustomFont(IFont *font)
 void TextPrinter::SetSystemFont()
 {
     m_font=&FontSystem::Instance();
-    /*
-    m_charwidth=8;
-    m_charheight=8;
-    m_customsprites=nullptr;
-    m_spritesheetwidth=0;
-    */
 }
-
-
-/*
-void TextPrinter::SetCustomFont(uint8_t *customsprites, const int16_t spritesheetwidth, const int8_t charwidth, const int8_t charheight)
-{
-    m_charwidth=charwidth;
-    m_charheight=charheight;
-    m_customsprites=customsprites;
-    m_spritesheetwidth=spritesheetwidth;
-}
-*/
 
 int16_t TextPrinter::LineHeight() const
 {
-    //return m_charheight;
     return m_font->LineHeight();
 }
 
@@ -63,7 +45,6 @@ void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, cons
                 else
                 {
                     PutChar(text[i],xpos,ypos);
-                    //xpos+=m_charwidth;
                     xpos+=m_font->CharWidth(text[i]);
                 }
             }
@@ -100,7 +81,6 @@ void TextPrinter::PrintCentered(const char *text, const int16_t cx, const int16_
     }
     tlen=(tlen<len ? tlen : len);
     buff[tlen]='\0';
-    //Print(text,cx-((tlen*m_charwidth)/2),y,len);
     Print(text,cx-(m_font->TextWidth(buff)/2),y,len);
 }
 
@@ -121,7 +101,6 @@ int16_t TextPrinter::WrapPos(const char *text, const int16_t maxwidth) const
     }
 
     // can't fit any chars in the output
-    //if(m_charwidth>maxwidth)
     if(m_font->CharWidth(text[0])>maxwidth)
     {
         return 0;
@@ -129,7 +108,6 @@ int16_t TextPrinter::WrapPos(const char *text, const int16_t maxwidth) const
 
     while(text[textpos])
     {
-        //currentwidth+=m_charwidth;
         currentwidth+=m_font->CharWidth(text[textpos]);
         if(text[textpos]=='\r' || text[textpos]=='\n')
         {
@@ -143,7 +121,6 @@ int16_t TextPrinter::WrapPos(const char *text, const int16_t maxwidth) const
             {
                 textpos++;
                 lastspace=textpos;
-                //currentwidth+=m_charwidth;
                 currentwidth+=m_font->CharWidth(text[textpos]);
             }
         }

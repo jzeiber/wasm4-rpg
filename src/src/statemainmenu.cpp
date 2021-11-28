@@ -7,10 +7,6 @@
 #include "font5x7.h"
 #include "textprinter.h"
 
-//debug
-#include "global.h"
-#include "printf.h"
-
 StateMainMenu::StateMainMenu():m_changestate(0),m_selectedslot(0),m_selectedsubslot(0),m_showdialog(false),m_game(nullptr)
 {
 
@@ -37,11 +33,6 @@ void StateMainMenu::StateChanged(const uint8_t prevstate, void *params)
 
 bool StateMainMenu::HandleInput(const Input *input)
 {
-    /*
-    if(input->GamepadButtonPress(1,1)==true)
-    {
-        //m_changestate=Game::STATE_GAME;
-    }*/
     if(input->GamepadButtonPress(1,BUTTON_UP))
     {
         m_selectedslot--;
@@ -94,8 +85,6 @@ void StateMainMenu::Update(const int ticks, Game *game=nullptr)
             modal->SetOption(1,"No");
             modal->SetSelectedOption(1);
         }
-        //modal->SetOption(3,"Maybe");
-        //modal->SetOption(3,"I don't know");
         game->ShowModalDialog(modal);
         m_showdialog=false;
         m_showingdialog=true;
