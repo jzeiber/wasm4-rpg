@@ -14,6 +14,13 @@ public:
         FLAG_SELECTED =0b00000010
     };
 
+    enum QuestType
+    {
+        TYPE_TRAVELAREA=1,
+        TYPE_TRAVELLOCATION=2,
+        TYPE_DELIVERY=3
+    };
+
     void Reset();
 
     bool GetActive() const;

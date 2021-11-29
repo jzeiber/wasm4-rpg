@@ -23,7 +23,7 @@ endif
 
 # Linker flags
 LDFLAGS = --no-entry --import-memory --initial-memory=65536 --max-memory=65536 \
-	--global-base=6560 -zstack-size=2048
+	--global-base=6560 -zstack-size=3072
 ifeq ($(DEBUG), 1)
 	#LDFLAGS += --export-all --no-gc-sections
 	LDFLAGS += --export-dynamic --gc-sections

@@ -10,8 +10,9 @@
 #include "settings.h"
 #include "wasmmath.h"
 #include "textprinter.h"
+#include "questcache.h"
 
-StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_tick(0)
+StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_tick(0)
 {
 
 }
@@ -133,23 +134,27 @@ bool StateGameOverworld::HandleInput(const Input *input)
     if(input->GamepadButtonPress(1,BUTTON_1))
     {
         // choose menu item
-        if(m_gamedata->m_selectedmenu==0)
+        if(m_gamedata->m_selectedmenu==OPTION_SAVE)
         {
             m_savegame=true;
         }
-        if(m_gamedata->m_selectedmenu==1)
+        if(m_gamedata->m_selectedmenu==OPTION_JOURNAL)
         {
             m_changestate=Game::STATE_GAMEQUESTJOURNAL;
         }
-        if(m_gamedata->m_selectedmenu==2)
+        if(m_gamedata->m_selectedmenu==OPTION_MAP)
         {
             m_changestate=Game::STATE_GAMEMAP;
+        }
+        if(m_gamedata->m_selectedmenu==OPTION_HOME)
+        {
+            m_showexitdialog=true;
         }
     }
     if(input->GamepadButtonPress(1,BUTTON_2))
     {
         m_gamedata->m_selectedmenu++;
-        if(m_gamedata->m_selectedmenu>3)
+        if(m_gamedata->m_selectedmenu>=OPTION_MAX)
         {
             m_gamedata->m_selectedmenu=0;
         }
@@ -164,6 +169,9 @@ void StateGameOverworld::Update(const int ticks, Game *game)
     {
         switch(m_changestate)
         {
+        case Game::STATE_MAINMENU:
+            game->ChangeState(m_changestate,game);
+            break;
         case Game::STATE_GAMEMAP:
         case Game::STATE_GAMEQUESTJOURNAL:
             game->ChangeState(m_changestate,m_gamedata);
@@ -184,7 +192,11 @@ void StateGameOverworld::Update(const int ticks, Game *game)
         if(qi>=0 && existingquest==false)
         {
             m_tempquest.Reset();
-            GenerateQuest(game->GetTicks(),m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest);
+            if(QuestCache::Instance().GetCache(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest)==false)
+            {
+                GenerateQuest(game->GetTicks(),m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest);
+                QuestCache::Instance().AddCache(m_tempquest,m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_ticks);
+            }
             char town[32]="\0";
             GenerateTownName((m_gamedata->m_playerworldx << 32) | (m_gamedata->m_playerworldy),town,31);
             snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
@@ -225,6 +237,29 @@ void StateGameOverworld::Update(const int ticks, Game *game)
         m_showingtowndialog=false;
         m_showtowndialog=false;
     }
+    if(m_showexitdialog==true)
+    {
+        ModalDialog &m=ModalDialog::Instance();
+        m.Reset();
+        m.SetCustomFont(&Font5x7::Instance());
+        m.SetTextWidth(144);
+        m.SetText("Are you sure you want to quit?  Any unsaved progress will be lost.");
+        m.SetOption(0,"Yes");
+        m.SetOption(1,"No");
+        m.SetSelectedOption(1);
+        game->ShowModalDialog(&ModalDialog::Instance());
+        m_showingexitdialog=true;
+        m_showexitdialog=false;
+    }
+    if(m_showingexitdialog==true && ModalDialog::Instance().Shown()==false)
+    {
+        m_showingexitdialog=false;
+        m_showexitdialog=false;
+        if(ModalDialog::Instance().SelectedOption()==0)
+        {
+            m_changestate=Game::STATE_MAINMENU;
+        }
+    }
 
     // check if we've completed any quests
     // right now just see if we've arrived close to destination and mark as completed
@@ -232,6 +267,8 @@ void StateGameOverworld::Update(const int ticks, Game *game)
     {
         if(m_gamedata->m_quests[i].GetActive() && _abs(m_gamedata->m_quests[i].m_destx-m_gamedata->m_playerworldx)<4 && _abs(m_gamedata->m_quests[i].m_desty-m_gamedata->m_playerworldy)<4)
         {
+            QuestCache::Instance().RemoveCache(m_gamedata->m_quests[i].m_sourcex,m_gamedata->m_quests[i].m_sourcey);
+
             m_gamedata->m_questscompleted++;
             m_gamedata->m_quests[i].SetActive(false);
             m_gamedata->AddGameMessage("Quest Completed");
@@ -361,6 +398,16 @@ void StateGameOverworld::Draw()
         }
     }
 
+    // health
+    {
+        //int16_t hp=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*16;
+        //rect(SCREEN_SIZE-14,1,6,20);
+        //rect(SCREEN_SIZE-12,3+(16-hp),2,hp);
+        //DrawHealthBar(SCREEN_SIZE-7,1,6,20);
+    }
+    DrawHealthBar(SCREEN_SIZE-15,1,6,20);
+    DrawManaBar(SCREEN_SIZE-7,1,6,20);
+
     // print messages
     int16_t tpos=viewsize-(m_gamedata->GameMessageCount()*8);
     for(int i=0; i<MAX_GAMEMESSAGE; i++)
@@ -375,15 +422,80 @@ void StateGameOverworld::Draw()
     }
 
     // bottom menu bar
-	*DRAW_COLORS=m_gamedata->m_selectedmenu==0 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
-	blitSub(spriteitem,0,SCREEN_SIZE-16,16,16,(7*16),(0*16),spriteitemWidth,BLIT_1BPP);	    // save icon
-    *DRAW_COLORS=m_gamedata->m_selectedmenu==1 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
-	blitSub(spriteitem,16,SCREEN_SIZE-16,16,16,(2*16),(0*16),spriteitemWidth,BLIT_1BPP);	// journal icon
-    *DRAW_COLORS=m_gamedata->m_selectedmenu==2 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
-	blitSub(spriteitem,32,SCREEN_SIZE-16,16,16,(3*16),(0*16),spriteitemWidth,BLIT_1BPP);	// map icon
-    *DRAW_COLORS=m_gamedata->m_selectedmenu==3 ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4);
-	blitSub(spriteitem,48,SCREEN_SIZE-16,16,16,(9*16),(0*16),spriteitemWidth,BLIT_1BPP);	// inventory icon
+    DrawMenuBar();
 
+}
+
+void StateGameOverworld::GetMenuSpriteSheetPos(const int16_t option, int16_t &x, int16_t &y)
+{
+    switch(option)
+    {
+    case OPTION_SAVE:
+        x=(7*16);
+        y=0;
+        break;
+    case OPTION_JOURNAL:
+        x=(2*16);
+        y=0;
+        break;
+    case OPTION_MAP:
+        x=(3*16);
+        y=0;
+        break;
+    case OPTION_INVENTORY:
+        x=(9*16);
+        y=0;
+        break;
+    case OPTION_REST:
+        x=0;
+        y=0;
+        break;
+    case OPTION_CHARACTER:
+        x=(12*16);
+        y=0;
+        break;
+    case OPTION_HOME:
+        x=(6*16);
+        y=0;
+        break;
+    default:
+        x=0;
+        y=0;
+    }
+}
+
+void StateGameOverworld::DrawMenuBar()
+{
+    int16_t sx=0;
+    int16_t sy=0;
+    for(int i=0; i<OPTION_MAX; i++)
+    {
+        GetMenuSpriteSheetPos(i,sx,sy);
+        *DRAW_COLORS=m_gamedata->m_selectedmenu==i ? (PALETTE_BROWN << 4 | PALETTE_WHITE) : (PALETTE_WHITE << 4 | PALETTE_BROWN);
+        blitSub(spriteitem,(i*16),SCREEN_SIZE-16,16,16,sx,sy,spriteitemWidth,spriteitemFlags);
+    }
+}
+
+void StateGameOverworld::DrawHealthBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
+{
+    int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
+    *DRAW_COLORS=(PALETTE_WHITE << 4);
+    rect(x,y,w,h);
+    //if(hp>?? || (m_gamedata->m_ticks/10)%3<2)    // blink if low
+    {
+        *DRAW_COLORS=(PALETTE_GREEN << 4);
+        rect(x+2,y+2+((h-4)-hph),w-4,hph);
+    }
+}
+
+void StateGameOverworld::DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
+{
+    //int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
+    int16_t mh=h-4;
+    *DRAW_COLORS=(PALETTE_WHITE << 4);
+    rect(x,y,w,h);
+    *DRAW_COLORS=(PALETTE_BLUE << 4);
+    rect(x+2,y+2+((h-4)-mh),w-4,mh);
 }
 
 int8_t StateGameOverworld::GetNextAvailableQuestIndex() const

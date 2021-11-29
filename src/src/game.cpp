@@ -9,6 +9,7 @@
 #include "settings.h"
 #include "printf.h"
 #include "miscfuncs.h"
+#include "wasmmath.h"
 
 Game::Game():m_state(STATE_STARTUP)
 {
@@ -213,7 +214,6 @@ bool Game::LoadGameData(const int8_t saveslot)
 	{
 		return false;
 	}
-
 	uint8_t buff[1024];
 	uint32_t bytes=diskr(buff,1024);
 	if(bytes==1024)
@@ -292,4 +292,26 @@ void Game::SaveData()
 	Settings::Instance().WriteSettings(&buff[4]);
 
 	diskw(buff,1024);
+}
+
+int32_t Game::GetNextLevelExperience(const int16_t level) const
+{
+	return static_cast<int32_t>(level)*static_cast<int32_t>(level)*10;
+}
+
+int32_t Game::GetMaxExperienceGain(const int16_t level) const
+{
+	int32_t val=_sqrt(static_cast<int32_t>(level)*static_cast<int32_t>(level)*10);
+	return (val < 1 ? 1 : val);
+}
+
+int32_t Game::GetMinExperienceGain(const int16_t level) const
+{
+	int32_t val=_sqrt(static_cast<int32_t>(level)*static_cast<int32_t>(level)*10)/10.0;
+	return (val < 1 ? 1 : val);
+}
+
+int32_t Game::GetLevelMaxHealth(const int16_t level) const
+{
+	return 10+(level*2);
 }

@@ -37,19 +37,24 @@ void PerlinNoise::Setup(const uint64_t seed)
 	{
 		m_perm[i]=i;
 	}
+
 	// shuffle elements
 	for(int i=256-1; i>0; i--)
 	{
 		int j=rand.Next()%(i+1);
-		float temp=m_perm[j];
+		int16_t temp=m_perm[j];
 		m_perm[j]=m_perm[i];
 		m_perm[i]=temp;
 	}
+
 	//debug
+	/*
 	for(int i=0; i<256; i++)
 	{
 		tracef("p[%d]=%d",i,m_perm[i]);
 	}
+	*/
+
 	// calculate dirs
 	for(int i=0; i<256; i++)
 	{		 

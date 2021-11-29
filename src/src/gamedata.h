@@ -4,6 +4,7 @@
 
 #include "map.h"
 #include "questdata.h"
+#include "mob.h"
 
 #define MOVE_NONE	0
 #define MOVE_LEFT	1
@@ -13,6 +14,7 @@
 #define MAX_QUESTS  5
 
 #define MAX_GAMEMESSAGE 4
+#define MAX_MOBS        20
 
 class GameData
 {
@@ -28,7 +30,11 @@ public:
     uint64_t GetSeed() const;
     */
 
+    void SetupNewGame(const uint64_t seed);
+
     void SetPlayerWorldPosition(const int64_t x, const int64_t y);
+
+    static constexpr uint8_t GameDataVersion();
     /*
     void SetPlayerWorldX(const int64_t x);
     int64_t GetPlayerWorldX() const;
@@ -44,17 +50,23 @@ public:
 
     Map &m_map;
     uint64_t m_ticks;
-    char m_gamemessages[MAX_GAMEMESSAGE][20];
+    char m_gamemessages[MAX_GAMEMESSAGE][20];       // 20 x 4 = 80 bytse
     uint64_t m_gamemessagedecay[MAX_GAMEMESSAGE];
     uint8_t m_saveslot;
     uint64_t m_seed;
     int64_t m_playerworldx;
     int64_t m_playerworldy;
+    int16_t m_playerlevel;
+    int32_t m_playerexpnextlevel;
+    int16_t m_playerhealth;
     int8_t m_movedir;
     int8_t m_selectedmenu;
     uint32_t m_questscompleted;
-    QuestData m_quests[MAX_QUESTS];
+    QuestData m_quests[MAX_QUESTS]; // 5 quests at 25 bytes each = 125 bytes
+    Mob m_mobs[20];                 // 20 mobs at 16 bytes each = 320 bytes
 
 private:
+
+    void SortClosestMobs(const int32_t x, const int32_t y);  // sorts m_mobs so closest to location are first
 
 };

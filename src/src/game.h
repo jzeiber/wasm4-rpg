@@ -47,6 +47,11 @@ public:
 	bool LoadGameData(const int8_t saveslot);
 	void SaveGameData();	// saves current m_gamedata
 
+	int32_t GetNextLevelExperience(const int16_t level) const;	// returns total experience required for the next level
+	int32_t GetMaxExperienceGain(const int16_t level) const;	// maximum exp gain per kill/quest completion
+	int32_t GetMinExperienceGain(const int16_t level) const;	// minimum exp gain per kill/quest completion
+	int32_t GetLevelMaxHealth(const int16_t level) const;		// max health for level
+
 private:
 	uint8_t m_state;
 	ModalDialog *m_modal;

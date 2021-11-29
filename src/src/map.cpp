@@ -5,6 +5,10 @@
 
 #include "wasm4.h"
 
+//debug
+#include "printf.h"
+#include "global.h"
+
 #define LAND_MASK_TOPLEFT		0b10000000
 #define LAND_MASK_TOP			0b01000000
 #define LAND_MASK_TOPRIGHT		0b00100000

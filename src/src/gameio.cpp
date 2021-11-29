@@ -59,6 +59,24 @@ void write_uint32_t(uint8_t *data, uint32_t val)
     data[3]=val & 0xff;
 }
 
+int32_t read_int32_t(const uint8_t *data)
+{
+    uint32_t val=0;
+    val=static_cast<int32_t>(data[0]) << 24;
+    val|=static_cast<int32_t>(data[1]) << 16;
+    val|=static_cast<int32_t>(data[2]) << 8;
+    val|=static_cast<int32_t>(data[3]);
+    return val;
+}
+
+void write_int32_t(uint8_t *data, int32_t val)
+{
+    data[0]=(val >> 24) & 0xff;
+    data[1]=(val >> 16) & 0xff;
+    data[2]=(val >> 8) & 0xff;
+    data[3]=val & 0xff;
+}
+
 uint64_t read_uint64_t(const uint8_t *data)
 {
     uint64_t val=0;

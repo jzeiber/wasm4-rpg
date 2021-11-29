@@ -7,6 +7,12 @@ RandomMT::RandomMT()
 
 RandomMT::RandomMT(const uint64_t seed)
 {
+	// init does not initialze context to 0, so do it here
+	m_state.status[0]=0;
+	m_state.status[1]=0;
+	m_state.mat1=0;
+	m_state.mat2=0;
+	m_state.tmat=0;
 	tinymt64_init(&m_state,seed);
 }
 
@@ -23,6 +29,11 @@ RandomMT &RandomMT::Instance()
 	
 void RandomMT::Seed(const uint64_t seed)
 {
+	m_state.status[0]=0;
+	m_state.status[1]=0;
+	m_state.mat1=0;
+	m_state.mat2=0;
+	m_state.tmat=0;
 	tinymt64_init(&m_state,seed);
 }
 

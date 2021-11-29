@@ -3,7 +3,7 @@
 
 Settings::Settings()
 {
-    m_movedelay=10;
+    m_movedelay=15;
 }
 
 Settings::~Settings()

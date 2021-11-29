@@ -139,20 +139,7 @@ void StateMainMenu::Update(const int ticks, Game *game=nullptr)
         {
             GameData &d=game->GetGameData();
             d.m_saveslot=m_selectedslot;
-            d.m_seed=game->GetTicks();
-            d.m_map.SetSeed(d.m_seed);
-            d.m_map.SetSize(16384);
-            d.m_selectedmenu=0;
-            d.m_movedir=MOVE_NONE;
-            d.m_playerworldx=0;
-            d.m_playerworldy=0;
-            d.m_map.UpdateWorldPosition(d.m_playerworldx,d.m_playerworldy);
-
-            d.m_questscompleted=0;
-            for(int i=0; i<MAX_QUESTS; i++)
-            {
-                d.m_quests[i].SetActive(false);
-            }
+            d.SetupNewGame(game->GetTicks());
 
             game->ChangeState(Game::STATE_GAMEOVERWORLD,&d);
         }
@@ -190,7 +177,7 @@ void StateMainMenu::Draw()
     {
         text("New Game",40,100);
     }
-    text("Settings",40,120);
+    text("Settings",40,124);
 
     if(m_selectedslot>=0 && m_selectedslot<3)
     {
