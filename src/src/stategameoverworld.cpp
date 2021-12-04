@@ -11,8 +11,9 @@
 #include "wasmmath.h"
 #include "textprinter.h"
 #include "questcache.h"
+#include "gameevent.h"
 
-StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_tick(0)
+StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_cursormode(MODE_MOVE),m_cursorx(0),m_cursory(0),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_tick(0)
 {
 
 }
@@ -38,6 +39,9 @@ void StateGameOverworld::StateChanged(const uint8_t prevstate, void *params)
     m_changestate=-1;
     m_lastmovetick=0;
     m_savegame=false;
+    m_cursormode=MODE_MOVE;
+    m_cursorx=0;
+    m_cursory=0;
 }
 
 bool StateGameOverworld::HandleInput(const Input *input)
@@ -119,15 +123,46 @@ bool StateGameOverworld::HandleInput(const Input *input)
     }
     if(dx!=0 || dy!=0)
     {
-        m_gamedata->m_playerworldx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+dx);
-        m_gamedata->m_playerworldy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+dy);
-        m_gamedata->m_map.UpdateWorldPosition(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy);
+        bool domove=true;
+        const int64_t newx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+dx);
+        const int64_t newy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+dy);
 
-        // check for town
-        Tile t=m_gamedata->m_map.GetTile(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy);
-        if((t.GetFeature()==Tile::FEATURE_TOWN1) || (t.GetFeature()==Tile::FEATURE_TOWN2))
+        if(m_gamedata->m_map.MoveBlocked(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,newx,newy)==true)
         {
-            m_showtowndialog=true;
+            domove=false;
+        }
+
+        // check for monster and attack
+        for(int i=0; i<MAX_MOBS; i++)
+        {
+            if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==newx && m_gamedata->m_mobs[i].m_y==newy)
+            {
+                domove=false;
+                if(m_gamedata->m_mobs[i].GetHostile()==true)
+                {
+                    GameEventParam ge;
+                    ge.m_targetmob=&m_gamedata->m_mobs[i];
+                    ge.m_int16[0]=1;    // damage
+                    m_gamedata->QueueGameEvent(EVENT_PLAYERATTACK,ge);
+                }
+            }
+        }
+
+        if(domove==true)
+        {
+            m_gamedata->m_playerworldx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+dx);
+            m_gamedata->m_playerworldy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+dy);
+            m_gamedata->m_map.UpdateWorldPosition(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy);
+
+            m_gamedata->QueueGameEvent(EVENT_PLAYERMOVE,GameEventParam());
+
+            // check for town
+            Tile t=m_gamedata->m_map.GetTile(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy);
+            if((t.GetFeature()==Tile::FEATURE_TOWN1) || (t.GetFeature()==Tile::FEATURE_TOWN2))
+            {
+                m_showtowndialog=true;
+                m_gamedata->QueueGameEvent(EVENT_ARRIVETOWN,GameEventParam());
+            }
         }
     }
 
@@ -145,6 +180,10 @@ bool StateGameOverworld::HandleInput(const Input *input)
         if(m_gamedata->m_selectedmenu==OPTION_MAP)
         {
             m_changestate=Game::STATE_GAMEMAP;
+        }
+        if(m_gamedata->m_selectedmenu==OPTION_INVENTORY || m_gamedata->m_selectedmenu==OPTION_REST || m_gamedata->m_selectedmenu==OPTION_CHARACTER)
+        {
+            m_gamedata->AddGameMessage("Not Implemented Yet");
         }
         if(m_gamedata->m_selectedmenu==OPTION_HOME)
         {
@@ -197,9 +236,12 @@ void StateGameOverworld::Update(const int ticks, Game *game)
                 GenerateQuest(game->GetTicks(),m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest);
                 QuestCache::Instance().AddCache(m_tempquest,m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_ticks);
             }
+            /*
             char town[32]="\0";
             GenerateTownName((m_gamedata->m_playerworldx << 32) | (m_gamedata->m_playerworldy),town,31);
             snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
+            m.SetText(global::buff);*/
+            m_tempquest.GetQuestGiverDescription(global::buff,global::buffsize);
             m.SetText(global::buff);
             m.SetOption(0,"Yes");
             m.SetOption(1,"No");
@@ -233,6 +275,11 @@ void StateGameOverworld::Update(const int ticks, Game *game)
             {
                 m_gamedata->m_quests[qi]=m_tempquest;
             }
+            m_gamedata->QueueGameEvent(EVENT_ACCEPTQUEST,GameEventParam());
+        }
+        else
+        {
+            m_gamedata->QueueGameEvent(EVENT_DECLINEQUEST,GameEventParam());
         }
         m_showingtowndialog=false;
         m_showtowndialog=false;
@@ -263,15 +310,28 @@ void StateGameOverworld::Update(const int ticks, Game *game)
 
     // check if we've completed any quests
     // right now just see if we've arrived close to destination and mark as completed
+    /*
     for(int i=0; i<MAX_QUESTS; i++)
     {
-        if(m_gamedata->m_quests[i].GetActive() && _abs(m_gamedata->m_quests[i].m_destx-m_gamedata->m_playerworldx)<4 && _abs(m_gamedata->m_quests[i].m_desty-m_gamedata->m_playerworldy)<4)
+        if(m_gamedata->m_quests[i].GetActive() && _abs(m_gamedata->m_quests[i].GetCurrentTargetWorldX()-m_gamedata->m_playerworldx)<4 && _abs(m_gamedata->m_quests[i].GetCurrentTargetWorldY()-m_gamedata->m_playerworldy)<4)
         {
             QuestCache::Instance().RemoveCache(m_gamedata->m_quests[i].m_sourcex,m_gamedata->m_quests[i].m_sourcey);
 
             m_gamedata->m_questscompleted++;
             m_gamedata->m_quests[i].SetActive(false);
             m_gamedata->AddGameMessage("Quest Completed");
+        }
+    }
+    */
+
+    m_gamedata->DispatchGameEvents();
+    m_gamedata->RecycleMobs();
+
+    for(int i=0; i<MAX_MOBS; i++)
+    {
+        if(m_gamedata->m_mobs[i].GetActive()==true)
+        {
+            m_gamedata->m_mobs[i].Update(1,game);
         }
     }
 
@@ -292,9 +352,40 @@ void StateGameOverworld::Draw()
     {
         for(int64_t x=0; x<9; x++)
         {
-            uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
-            uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
+            const uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
+            const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
             m_gamedata->m_map.DrawTile(wx,wy,x*16,y*16);
+
+            for(int i=0; i<MAX_MOBS; i++)
+            {
+                //if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
+                /*
+                if((i==0 && x==2 && y==2) || (i==1 && x==6 && y==4))
+                {
+                    // a little jitter for the monster sprite
+                    m_gamedata->m_mobs[i].m_x=wx;
+                    m_gamedata->m_mobs[i].m_y=wy;
+                    m_gamedata->m_mobs[i].Update(1,m_gamedata);
+                    //const int16_t jx=(((m_gamedata->m_ticks+x)/10)%3)-1;
+                    //const int16_t jy=(((m_gamedata->m_ticks+y)/10)%3)-1;
+                    const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
+                    const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
+                    *DRAW_COLORS=(PALETTE_WHITE << 4);
+                    blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(5*16),spritecharacterWidth,spritecharacterFlags);
+                    *DRAW_COLORS=(PALETTE_BROWN << 4);
+                    blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(4*16),spritecharacterWidth,spritecharacterFlags);
+                }
+                */
+               if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
+               {
+                   const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
+                   const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
+                   *DRAW_COLORS=(PALETTE_WHITE << 4);
+                   blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(5*16),spritecharacterWidth,spritecharacterFlags);
+                   *DRAW_COLORS=(PALETTE_BROWN << 4);
+                   blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(4*16),spritecharacterWidth,spritecharacterFlags);
+               }
+            }
 
 			if(wx==m_gamedata->m_playerworldx && wy==m_gamedata->m_playerworldy)
 			{
@@ -347,11 +438,9 @@ void StateGameOverworld::Draw()
         for(int i=0; i<MAX_QUESTS; i++)
         {
             // TODO - check if quest is selected
-            if(m_gamedata->m_quests[i].GetActive()==true)
+            if(m_gamedata->m_quests[i].GetActive()==true && m_gamedata->m_quests[i].HasTargetLocation()==true)
             {
                 *DRAW_COLORS=PALETTE_WHITE;
-                // swap source and dest y because on map +y is down and for tan it's +y up
-                //const float ang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_quests[i].m_desty,m_gamedata->m_quests[i].m_destx,m_gamedata->m_playerworldy);
                 const float ang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_quests[i].m_destx,m_gamedata->m_quests[i].m_desty);
                 // check for nan
                 if(ang==ang)
@@ -362,7 +451,7 @@ void StateGameOverworld::Draw()
 
                     // draw arrow icon pointing to quest location
                     *DRAW_COLORS=(PALETTE_WHITE << 4);
-                    if(_dabs(dx)>=_dabs(dy))
+                    if(_dabs(dx)>=_dabs(dy))    // arrow on left or right of screen
                     {
                         const float scale=_dabs(static_cast<double>(viewsize)/(dx*2.0));
                         const int64_t xpos=(dx<0 ? -4 : viewsize-16+4);   // offset sprite by 16 pixels to the left
@@ -377,7 +466,7 @@ void StateGameOverworld::Draw()
                             blitSub(spriteitem,xpos,ypos,16,h,(5*16),(14*16),spriteitemWidth,spriteitemFlags);
                         }
                     }
-                    else
+                    else    // arrow on top or bottom of screen
                     {
                         const float scale=_dabs(static_cast<double>(viewsize)/(dy*2.0));
                         const int64_t xpos=(viewsize/2)+(scale*dx)-8;

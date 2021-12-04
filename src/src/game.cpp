@@ -29,35 +29,35 @@ Game::Game():m_state(STATE_STARTUP)
 
 	m_modal=nullptr;
 
-	m_states[STATE_STARTUP]=dynamic_cast<IState *>(&StateStartup::Instance());
-	m_updatables[STATE_STARTUP]=dynamic_cast<IUpdatable *>(&StateStartup::Instance());
+	m_states[STATE_STARTUP]=static_cast<IState *>(&StateStartup::Instance());
+	m_updatables[STATE_STARTUP]=static_cast<IUpdatable *>(&StateStartup::Instance());
 
-	m_states[STATE_MAINMENU]=dynamic_cast<IState *>(&StateMainMenu::Instance());
-	m_updatables[STATE_MAINMENU]=dynamic_cast<IUpdatable *>(&StateMainMenu::Instance());
-	m_drawables[STATE_MAINMENU]=dynamic_cast<IDrawable *>(&StateMainMenu::Instance());
-	m_inputhandlers[STATE_MAINMENU]=dynamic_cast<IInputHandler *>(&StateMainMenu::Instance());
+	m_states[STATE_MAINMENU]=static_cast<IState *>(&StateMainMenu::Instance());
+	m_updatables[STATE_MAINMENU]=static_cast<IUpdatable *>(&StateMainMenu::Instance());
+	m_drawables[STATE_MAINMENU]=static_cast<IDrawable *>(&StateMainMenu::Instance());
+	m_inputhandlers[STATE_MAINMENU]=static_cast<IInputHandler *>(&StateMainMenu::Instance());
 
 	/*
-	m_states[STATE_GAME]=dynamic_cast<IState *>(&StateGame::Instance());
-	m_updatables[STATE_GAME]=dynamic_cast<IUpdatable *>(&StateGame::Instance());
-	m_drawables[STATE_GAME]=dynamic_cast<IDrawable *>(&StateGame::Instance());
-	m_inputhandlers[STATE_GAME]=dynamic_cast<IInputHandler *>(&StateGame::Instance());
+	m_states[STATE_GAME]=static_cast<IState *>(&StateGame::Instance());
+	m_updatables[STATE_GAME]=static_cast<IUpdatable *>(&StateGame::Instance());
+	m_drawables[STATE_GAME]=static_cast<IDrawable *>(&StateGame::Instance());
+	m_inputhandlers[STATE_GAME]=static_cast<IInputHandler *>(&StateGame::Instance());
 	*/
 
-	m_states[STATE_GAMEOVERWORLD]=dynamic_cast<IState *>(&StateGameOverworld::Instance());
-	m_updatables[STATE_GAMEOVERWORLD]=dynamic_cast<IUpdatable *>(&StateGameOverworld::Instance());
-	m_drawables[STATE_GAMEOVERWORLD]=dynamic_cast<IDrawable *>(&StateGameOverworld::Instance());
-	m_inputhandlers[STATE_GAMEOVERWORLD]=dynamic_cast<IInputHandler *>(&StateGameOverworld::Instance());
+	m_states[STATE_GAMEOVERWORLD]=static_cast<IState *>(&StateGameOverworld::Instance());
+	m_updatables[STATE_GAMEOVERWORLD]=static_cast<IUpdatable *>(&StateGameOverworld::Instance());
+	m_drawables[STATE_GAMEOVERWORLD]=static_cast<IDrawable *>(&StateGameOverworld::Instance());
+	m_inputhandlers[STATE_GAMEOVERWORLD]=static_cast<IInputHandler *>(&StateGameOverworld::Instance());
 
-	m_states[STATE_GAMEMAP]=dynamic_cast<IState *>(&StateGameMap::Instance());
-	m_updatables[STATE_GAMEMAP]=dynamic_cast<IUpdatable *>(&StateGameMap::Instance());
-	m_drawables[STATE_GAMEMAP]=dynamic_cast<IDrawable *>(&StateGameMap::Instance());
-	m_inputhandlers[STATE_GAMEMAP]=dynamic_cast<IInputHandler *>(&StateGameMap::Instance());
+	m_states[STATE_GAMEMAP]=static_cast<IState *>(&StateGameMap::Instance());
+	m_updatables[STATE_GAMEMAP]=static_cast<IUpdatable *>(&StateGameMap::Instance());
+	m_drawables[STATE_GAMEMAP]=static_cast<IDrawable *>(&StateGameMap::Instance());
+	m_inputhandlers[STATE_GAMEMAP]=static_cast<IInputHandler *>(&StateGameMap::Instance());
 
-	m_states[STATE_GAMEQUESTJOURNAL]=dynamic_cast<IState *>(&StateGameQuestJournal::Instance());
-	m_updatables[STATE_GAMEQUESTJOURNAL]=dynamic_cast<IUpdatable *>(&StateGameQuestJournal::Instance());
-	m_drawables[STATE_GAMEQUESTJOURNAL]=dynamic_cast<IDrawable *>(&StateGameQuestJournal::Instance());
-	m_inputhandlers[STATE_GAMEQUESTJOURNAL]=dynamic_cast<IInputHandler *>(&StateGameQuestJournal::Instance());
+	m_states[STATE_GAMEQUESTJOURNAL]=static_cast<IState *>(&StateGameQuestJournal::Instance());
+	m_updatables[STATE_GAMEQUESTJOURNAL]=static_cast<IUpdatable *>(&StateGameQuestJournal::Instance());
+	m_drawables[STATE_GAMEQUESTJOURNAL]=static_cast<IDrawable *>(&StateGameQuestJournal::Instance());
+	m_inputhandlers[STATE_GAMEQUESTJOURNAL]=static_cast<IInputHandler *>(&StateGameQuestJournal::Instance());
 
 }
 

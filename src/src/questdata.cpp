@@ -1,5 +1,10 @@
 #include "questdata.h"
+#include "gamedata.h"
 #include "gameio.h"
+#include "gameevent.h"
+#include "questcache.h"
+#include "outputstringstream.h"
+#include "miscfuncs.h"
 
 QuestData::QuestData()
 {
@@ -26,6 +31,16 @@ void QuestData::Reset()
     }
 }
 
+void QuestData::SetFlag(const uint16_t flag, const bool val)
+{
+    m_flags=(m_flags & ~flag) | (val ? flag : 0);
+}
+
+bool QuestData::GetFlag(const uint16_t flag) const
+{
+    return (m_flags & flag) == flag;
+}
+
 bool QuestData::GetActive() const
 {
     return (m_flags & FLAG_ACTIVE)==FLAG_ACTIVE;
@@ -38,12 +53,48 @@ bool QuestData::GetSelected() const
 
 void QuestData::SetActive(const bool active)
 {
-    m_flags=(m_flags & ~FLAG_ACTIVE) | (active ? FLAG_ACTIVE : 0);
+    //m_flags=(m_flags & ~FLAG_ACTIVE) | (active ? FLAG_ACTIVE : 0);
+    SetFlag(FLAG_ACTIVE,active);
 }
 
 void QuestData::SetSelected(const bool selected)
 {
-    m_flags=(m_flags & ~FLAG_SELECTED) | (selected ? FLAG_SELECTED : 0);
+    //m_flags=(m_flags & ~FLAG_SELECTED) | (selected ? FLAG_SELECTED : 0);
+    SetFlag(FLAG_SELECTED,selected);
+}
+
+void QuestData::SetHasSourceLocation(const bool hassourceloc)
+{
+    //m_flags=(m_flags & ~FLAG_SOURCELOC) | (hassourceloc ? FLAG_SOURCELOC : 0);
+    SetFlag(FLAG_SOURCELOC,hassourceloc);
+}
+
+bool QuestData::HasSourceLocation() const
+{
+    //return (m_flags & FLAG_SOURCELOC)==FLAG_SOURCELOC;
+    return GetFlag(FLAG_SOURCELOC);
+}
+
+void QuestData::SetTutorial(const bool tutorial)
+{
+    SetFlag(FLAG_TUTORIAL,tutorial);
+}
+
+bool QuestData::Tutorial() const
+{
+    return GetFlag(FLAG_TUTORIAL);
+}
+
+int64_t QuestData::GetCurrentTargetWorldX() const
+{
+    //TODO - different types of quests and their progress may have different targets
+    return m_destx;
+}
+
+int64_t QuestData::GetCurrentTargetWorldY() const
+{
+    //TODO - different types of quests and their progress may have different targets
+    return m_desty;
 }
 
 bool QuestData::WriteQuestData(void *data) const
@@ -98,4 +149,145 @@ bool QuestData::LoadQuestData(void *data)
         pos+=1;
     }
     return true;
+}
+
+bool QuestData::HasTargetLocation() const
+{
+    switch(m_type)
+    {
+    case TYPE_TRAVELAREA:
+    case TYPE_TRAVELLOCATION:
+    case TYPE_KILLAREAMONSTERS:
+    case TYPE_DELIVERY:
+        return true;
+        break;
+    case TYPE_TRAVELDISTANCE:
+    case TYPE_VISITANYTOWN:
+    case TYPE_ACCEPTQUESTS:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param)
+{
+    if(GetActive()==true)
+    {
+        bool questcompleted=false;
+        switch(eventtype)
+        {
+        case EVENT_PLAYERMOVE:
+            if(m_type==TYPE_TRAVELLOCATION && gamedata->m_playerworldx==m_destx && gamedata->m_playerworldy==m_desty)
+            {
+                questcompleted=true;
+            }
+            if(m_type==TYPE_TRAVELAREA && gamedata->m_map.ComputeDistanceSq(gamedata->m_playerworldx,gamedata->m_playerworldy,m_destx,m_desty)<=(static_cast<int32_t>(m_data[0])*static_cast<int32_t>(m_data[0])))
+            {
+                questcompleted=true;
+            }
+            if(m_type==TYPE_TRAVELDISTANCE && ++m_progress==m_data[0])
+            {
+                questcompleted=true;
+            }
+            break;
+        case EVENT_ARRIVETOWN:
+            if(m_type==TYPE_VISITANYTOWN)
+            {
+                questcompleted=true;
+            }
+            break;
+        case EVENT_ACCEPTQUEST:
+            if(m_type==TYPE_ACCEPTQUESTS && ++m_progress==m_data[0])
+            {
+                questcompleted=true;
+            }
+            break;
+        }
+
+        if(questcompleted==true)
+        {
+            SetActive(false);
+            gamedata->m_questscompleted++;
+            gamedata->AddGameMessage("Quest Completed!");
+            QuestCache::Instance().RemoveCache(m_sourcex,m_sourcey);
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void QuestData::GetQuestGiverDescription(char *desc, const int16_t len)
+{
+    OutputStringStream ostr;
+
+    //snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
+
+    switch(m_type)
+    {
+    case TYPE_TRAVELLOCATION:
+        ostr << "Travel to a nearby location marked on your map.";
+        break;
+    case TYPE_TRAVELAREA:
+        ostr << "Travel close to the location marked on your map.";
+        break;
+    default:
+        ostr << "????";
+    }
+
+    strncpy(desc,ostr.Buffer(),len-1);
+}
+
+void QuestData::GetDescription(char *desc, const int16_t len)
+{
+    OutputStringStream ostr;
+    ostr << "Type : ";
+    switch(m_type)
+    {
+    case TYPE_TRAVELAREA:
+    case TYPE_TRAVELLOCATION:
+    case TYPE_TRAVELDISTANCE:
+        ostr << "Travel\n";
+        break;
+    case TYPE_DELIVERY:
+        ostr << "Delivery\n";
+        break;
+    case TYPE_KILLAREAMONSTERS:
+        ostr << "Clear Area\n";
+        break;
+    case TYPE_VISITANYTOWN:
+        ostr << "Visit Town\n";
+        break;
+    case TYPE_ACCEPTQUESTS:
+        ostr << "General\n";
+        break;
+    default:
+        ostr << "????";
+    }
+    switch(m_type)
+    {
+    case TYPE_TRAVELAREA:
+        ostr << "Go to the area marked on your map.\n";
+        break;
+    case TYPE_TRAVELLOCATION:
+        ostr << "Go to the location marked on your map.\n";
+        ostr << m_destx << "," << m_desty << "\n";
+        break;
+    case TYPE_TRAVELDISTANCE:
+        ostr << "Move " << static_cast<int32_t>(m_data[0]) << " spaces in any direction\n";
+        ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+        break;
+    case TYPE_VISITANYTOWN:
+        ostr << "Visit any town.\n";
+        break;
+    case TYPE_ACCEPTQUESTS:
+        ostr << "Accept " << static_cast<int32_t>(m_data[0]) << " quest" << (m_data[0]==1 ? "" : "s") << "\n";
+        ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+        break;
+    default:
+        ostr << "????";
+    }
+    strncpy(desc,ostr.Buffer(),len-1);
 }

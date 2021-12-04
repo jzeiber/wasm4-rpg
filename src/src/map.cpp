@@ -67,6 +67,11 @@ uint64_t Map::WrapCoordinate(int64_t coordinate) const
 	return coord;
 }
 
+bool Map::MoveBlocked(const uint64_t sourcex, const uint64_t sourcey, const uint64_t destx, const uint64_t desty)
+{
+	return false;
+}
+
 uint8_t Map::GetTerrainType(const uint64_t worldx, const uint64_t worldy, const bool usecached) const
 {
 	const int64_t wx=WrapCoordinate(worldx);

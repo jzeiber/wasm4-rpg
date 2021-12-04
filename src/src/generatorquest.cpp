@@ -11,7 +11,20 @@ void GenerateQuest(const uint64_t seed, const uint64_t wx, const uint64_t wy, Qu
     quest.m_sourcex=wx;
     quest.m_sourcey=wy;
 
-    quest.m_destx=Map::Instance().WrapCoordinate(wx+((r.Next()%40)-20));
-    quest.m_desty=Map::Instance().WrapCoordinate(wy+((r.Next()%40)-20));
+    // TODO - loop while position is too close to current position
+    int16_t dx=0;
+    int16_t dy=0;
+    do
+    {
+        dx=(r.Next()%60)-30;
+        dy=(r.Next()%60)-30;
+    }while(((dx*dx)+(dy*dy))<100);
+    
+    quest.m_destx=Map::Instance().WrapCoordinate(wx+(dx));
+    quest.m_desty=Map::Instance().WrapCoordinate(wy+(dy));
+
+    //quest.m_type=QuestData::QuestType::TYPE_TRAVELLOCATION;
+    quest.m_type=QuestData::QuestType::TYPE_TRAVELAREA;
+    quest.m_data[0]=(r.Next()%5)+3;
 
 }

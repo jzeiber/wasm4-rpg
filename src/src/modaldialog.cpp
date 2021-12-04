@@ -39,14 +39,27 @@ bool ModalDialog::HandleInput(const Input *input)
             }
         }
     }
-    if(input->GamepadButtonPress(1,BUTTON_DOWN) || input->GamepadButtonPress(1,BUTTON_RIGHT))
+    if(input->GamepadButtonPress(1,BUTTON_DOWN) || input->GamepadButtonPress(1,BUTTON_RIGHT) || input->GamepadButtonPress(1,BUTTON_2)==true)
     {
+        bool changedoption=false;
         for(int i=m_selectedoption+1; i<4; i++)
         {
             if(m_options[i][0]!='\0')
             {
                 m_selectedoption=i;
+                changedoption=true;
                 i=4;
+            }
+        }
+        if(changedoption==false && input->GamepadButtonPress(1,BUTTON_2)==true)
+        {
+            for(int i=0; i<m_selectedoption; i++)
+            {
+                if(m_options[i][0]!='\0')
+                {
+                    m_selectedoption=i;
+                    i=m_selectedoption;
+                }
             }
         }
     }

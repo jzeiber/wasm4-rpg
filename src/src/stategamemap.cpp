@@ -109,7 +109,7 @@ void StateGameMap::Draw()
             line(x,y,x,y);
             for(int i=0; i<MAX_QUESTS; i++)
             {
-                if(m_gamedata->m_quests[i].GetActive()==true && m_gamedata->m_quests[i].m_destx==wx && m_gamedata->m_quests[i].m_desty==wy)
+                if(m_gamedata->m_quests[i].GetActive()==true && m_gamedata->m_quests[i].HasTargetLocation()==true && m_gamedata->m_quests[i].GetCurrentTargetWorldX()==wx && m_gamedata->m_quests[i].GetCurrentTargetWorldY()==wy)
                 {
                     dq[i][0]=x;
                     dq[i][1]=y;

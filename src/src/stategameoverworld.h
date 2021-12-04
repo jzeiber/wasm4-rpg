@@ -23,6 +23,9 @@ public:
 private:
     GameData *m_gamedata;
     QuestData m_tempquest;
+    int8_t m_cursormode;
+    int8_t m_cursorx;
+    int8_t m_cursory;
     int8_t m_changestate;
     bool m_showtowndialog;
     bool m_showingtowndialog;
@@ -43,6 +46,12 @@ private:
         OPTION_CHARACTER,
         OPTION_HOME,
         OPTION_MAX
+    };
+
+    enum CursorMode
+    {
+        MODE_MOVE=0,
+        MODE_TARGET
     };
 
     int8_t GetNextAvailableQuestIndex() const;  // -1 if none are available

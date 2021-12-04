@@ -2,10 +2,17 @@
 #include "gameio.h"
 #include "miscfuncs.h"
 #include "game.h"
+#include "gameevent.h"
+
+//debug
+#include "outputstringstream.h"
 
 GameData::GameData():m_map(Map::Instance()),m_ticks(0),m_saveslot(0),m_seed(0),m_playerworldx(0),m_playerworldy(0),m_playerlevel(0),m_playerexpnextlevel(0),m_movedir(MOVE_NONE),m_selectedmenu(0),m_questscompleted(0)
 {
-
+    for(int i=0; i<MAX_QUEUE_EVENTS; i++)
+    {
+        m_queuedevent[i]=EVENT_NONE;
+    }
 }
 
 GameData::~GameData()
@@ -24,7 +31,7 @@ void GameData::SetPlayerWorldPosition(const int64_t x, const int64_t y)
     m_playerworldy=y;
 }
 
-bool GameData::WriteGameData(void *data) const
+bool GameData::WriteGameData(void *data)
 {
     uint8_t *p=(uint8_t *)data;
     int16_t pos=0;
@@ -51,7 +58,15 @@ bool GameData::WriteGameData(void *data) const
     for(int i=0; i<MAX_QUESTS; i++)
     {
         m_quests[i].WriteQuestData(&p[pos]);
-        pos+=25;
+        pos+=QuestData::SaveDataLength();
+    }
+
+    // save 5 closest mobs
+    SortClosestMobs(m_playerworldx,m_playerworldy);
+    for(int i=0; i<5 && i<MAX_MOBS; i++)
+    {
+        m_mobs[i].WriteMobData(&p[pos]);
+        pos+=Mob::SaveDataLength();
     }
 
     return true;
@@ -84,10 +99,16 @@ bool GameData::LoadGameData(void *data)
         for(int i=0; i<MAX_QUESTS; i++)
         {
             m_quests[i].LoadQuestData(&p[pos]);
-            pos+=25;
+            pos+=QuestData::SaveDataLength();
         }
 
-        for(int i=0; i<MAX_MOBS; i++)
+        for(int i=0; i<5 && i<MAX_MOBS; i++)
+        {
+            m_mobs[i].LoadMobData(&p[pos]);
+            pos+=Mob::SaveDataLength();
+        }
+
+        for(int i=5; i<MAX_MOBS; i++)
         {
             m_mobs[i].SetActive(false);
         }
@@ -109,11 +130,24 @@ void GameData::AddGameMessage(const char *message)
     {
         if(m_gamemessages[i][0]=='\0')
         {
-            strncpy(m_gamemessages[i],message,19);
+            strncpy(m_gamemessages[i],message,31);
             m_gamemessagedecay[i]=m_ticks+(60*5);
             return;
         }
     }
+    // no open slots - remove the top message and move everything up 1 and add new message at end
+    for(int i=0; i<MAX_GAMEMESSAGE-1; i++)
+    {
+        if(m_gamemessages[i+1][0]!='\0')
+        {
+            strncpy(m_gamemessages[i],m_gamemessages[i+1],31);
+            m_gamemessagedecay[i]=m_gamemessagedecay[i+1];
+            m_gamemessages[i+1][0]=='\0';
+            m_gamemessagedecay[i+1]=0;
+        }
+    }
+    strncpy(m_gamemessages[MAX_GAMEMESSAGE-1],message,31);
+    m_gamemessagedecay[MAX_GAMEMESSAGE-1]=m_ticks+(60*5);
 }
 
 int16_t GameData::GameMessageCount() const
@@ -154,6 +188,43 @@ void GameData::SetupNewGame(const uint64_t seed)
         m_mobs[i].SetActive(false);
     }
 
+    for(int i=0; i<MAX_QUEUE_EVENTS; i++)
+    {
+        m_queuedevent[i]=EVENT_NONE;
+    }
+
+    // TODO - start travel distance quest
+    m_quests[0].SetActive(true);
+    m_quests[0].m_sourcex=0;
+    m_quests[0].m_sourcey=0;
+    m_quests[0].m_destx=0;
+    m_quests[0].m_desty=0;
+    m_quests[0].m_progress=0;
+    m_quests[0].m_data[0]=50;
+    m_quests[0].m_type=QuestData::TYPE_TRAVELDISTANCE;
+    m_quests[0].SetHasSourceLocation(false);
+
+    m_quests[1].SetActive(true);
+    m_quests[1].m_sourcex=0;
+    m_quests[1].m_sourcey=0;
+    m_quests[1].m_destx=0;
+    m_quests[1].m_desty=0;
+    m_quests[1].m_progress=0;
+    m_quests[1].m_type=QuestData::TYPE_VISITANYTOWN;
+    m_quests[1].SetHasSourceLocation(false);
+
+    m_quests[2].SetActive(true);
+    m_quests[2].m_sourcex=0;
+    m_quests[2].m_sourcey=0;
+    m_quests[2].m_destx=0;
+    m_quests[2].m_desty=0;
+    m_quests[2].m_progress=0;
+    m_quests[2].m_data[0]=5;
+    m_quests[2].m_type=QuestData::TYPE_ACCEPTQUESTS;
+    m_quests[2].SetHasSourceLocation(false);
+
+    AddGameMessage("You have a new quest");
+
     //debug
     //m_playerhealth=m_playerhealth/4;
 }
@@ -178,6 +249,92 @@ void GameData::SortClosestMobs(const int32_t x, const int32_t y)
                     m_mobs[j+1]=tempmob;
                 }
             }
+        }
+    }
+}
+
+void GameData::RecycleMobs()
+{
+    int16_t alivecount=0;
+    for(int i=0; i<MAX_MOBS; i++)
+    {
+        if(m_mobs[i].GetActive()==true)
+        {
+            if(m_map.ComputeDistanceSq(m_mobs[i].m_x,m_mobs[i].m_y,m_playerworldx,m_playerworldy)>(50*50))
+            {
+                m_mobs[i].SetActive(false);
+            }
+            else
+            {
+                alivecount++;
+            }
+        }
+    }
+    if(alivecount<(MAX_MOBS*3)/4)
+    {
+        for(int i=0; i<MAX_MOBS; i++)
+        {
+            if(m_mobs[i].GetActive()==false)
+            {
+                RandomMT r;
+                r.Seed(m_ticks);
+                m_mobs[i].SetActive(true);
+                m_mobs[i].SetHostile(true);
+                // TODO - get and send terrain type
+                m_mobs[i].CreateRandom(r,m_playerlevel,Tile::TERRAIN_LAND);
+                // TODO - set mob type
+                int16_t dx=0;
+                int16_t dy=0;
+                // TODO - don't place on town/unmovable/player pos
+                do
+                {
+                    dx=(r.Next()%40)-20;
+                    dy=(r.Next()%40)-20;
+                }while(((dx*dx)+(dy*dy)) < 100);
+                
+                m_mobs[i].m_x=m_map.WrapCoordinate(m_playerworldx+dx);
+                m_mobs[i].m_y=m_map.WrapCoordinate(m_playerworldy+dy);
+
+                break;
+            }
+        }
+    }
+}
+
+void GameData::QueueGameEvent(const int16_t gameevent, GameEventParam param)
+{
+    for(int i=0; i<MAX_QUEUE_EVENTS; i++)
+    {
+        if(m_queuedevent[i]==EVENT_NONE)
+        {
+            m_queuedevent[i]=gameevent;
+            m_queuedeventparam[i]=param;
+            break;
+        }
+    }
+}
+
+void GameData::DispatchGameEvents()
+{
+    for(int i=0; i<MAX_QUEUE_EVENTS; i++)
+    {
+        if(m_queuedevent[i]!=EVENT_NONE)
+        {
+            for(int j=0; j<MAX_MOBS; j++)
+            {
+                if(m_mobs[j].GetActive()==true)
+                {
+                    m_mobs[j].HandleGameEvent(m_queuedevent[i],this,m_queuedeventparam[i]);
+                }
+            }
+            for(int j=0; j<MAX_QUESTS; j++)
+            {
+                if(m_quests[j].GetActive()==true)
+                {
+                    m_quests[j].HandleGameEvent(m_queuedevent[i],this,m_queuedeventparam[i]);
+                }
+            }
+            m_queuedevent[i]=EVENT_NONE;
         }
     }
 }

@@ -33,6 +33,8 @@ public:
 
 	Tile ComputeTile(const uint64_t worldx, const uint64_t worldy);
 
+	bool MoveBlocked(const uint64_t sourcex, const uint64_t sourcey, const uint64_t destx, const uint64_t desty);
+
 	float ComputeAngle(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
 	float ComputeDistance(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
 	float ComputeDistanceSq(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;

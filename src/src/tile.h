@@ -101,7 +101,7 @@ public:
 	{
 		uint8_t spriteidxx;
 		uint8_t spriteidxy;
-		uint32_t blitcolors;
+		uint16_t blitcolors;
 		uint8_t blitflags;
 	};
 	

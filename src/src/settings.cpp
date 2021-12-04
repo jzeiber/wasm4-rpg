@@ -4,6 +4,7 @@
 Settings::Settings()
 {
     m_movedelay=15;
+    m_gamepad=1;
 }
 
 Settings::~Settings()
@@ -43,4 +44,14 @@ int16_t Settings::GetMoveDelay() const
 void Settings::SetMoveDelay(const int16_t movedelay)
 {
     m_movedelay=movedelay;
+}
+
+uint8_t Settings::GetGamepad() const
+{
+
+}
+
+void Settings::SetGamepad(const uint8_t gamepad)
+{
+
 }

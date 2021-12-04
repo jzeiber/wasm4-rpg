@@ -10,7 +10,7 @@
 #include "spriteitem.h"
 #include "generatortownname.h"
 #include "wasmmath.h"
-#include <float.h>>
+#include "miscfuncs.h"
 
 StateGameQuestJournal::StateGameQuestJournal():m_gamedata(nullptr),m_changestate(-1),m_questidx(-1)
 {
@@ -149,19 +149,22 @@ void StateGameQuestJournal::Draw()
     if(m_questidx>=0 && m_questidx<MAX_QUESTS && m_gamedata->m_quests[m_questidx].GetActive()==true)
     {
         *DRAW_COLORS=PALETTE_WHITE;
-        int64_t qx=m_gamedata->m_quests[m_questidx].m_sourcex;
-        int64_t qy=m_gamedata->m_quests[m_questidx].m_sourcey;
+        /*
+        const int64_t qx=m_gamedata->m_quests[m_questidx].m_sourcex;
+        const int64_t qy=m_gamedata->m_quests[m_questidx].m_sourcey;
         char temp[32];
-        GenerateTownName((qx << 32) | qy,temp,31);
-        tp.PrintWrapped(temp,1,60,128,SCREEN_SIZE-2);
+        if(m_gamedata->m_quests[m_questidx].HasSourceLocation()==true)
+        {
+            GenerateTownName((qx << 32) | qy,temp,31);
+            tp.PrintWrapped(temp,1,60,128,SCREEN_SIZE-2);
+        }
 
-        // flip source and dest y because y is +down, but tan expects +y to be up
-        //const float destang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_quests[m_questidx].m_desty,m_gamedata->m_quests[m_questidx].m_destx,m_gamedata->m_playerworldy);
+        // flip source and dest y because +y is down on map, but tan expects +y to be up
         const float destang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_quests[m_questidx].m_desty,m_gamedata->m_quests[m_questidx].m_destx,m_gamedata->m_playerworldy);
         const float destdistsq=m_gamedata->m_map.ComputeDistanceSq(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_quests[m_questidx].m_destx,m_gamedata->m_quests[m_questidx].m_desty);
 
         const float mpi8=M_PI_4/2;
-        if(destang==FLT_MAX || destang==FLT_MIN || destang!=destang)
+        if(destang!=destang)
         {
             snprintf(temp,31,"Here");
         }
@@ -227,33 +230,12 @@ void StateGameQuestJournal::Draw()
         }
         snprintf(global::buff,global::buffsize,"Distance %s",temp);
         tp.PrintWrapped(global::buff,1,80,128,SCREEN_SIZE-2);
-    }
+        */
 
-    /*
-    for(int64_t y=0; y<SCREEN_SIZE; y++)
-    {
-        for(int64_t x=0; x<SCREEN_SIZE; x++)
-        {
-            uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_x+x-(SCREEN_SIZE/2));
-            uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_y+y-(SCREEN_SIZE/2));
-            Tile t=m_gamedata->m_map.ComputeTile(wx,wy);
-            uint8_t ter=t.GetTerrainType();
-            if(ter==Tile::TerrainType::TERRAIN_LAND)
-            {
-                *DRAW_COLORS=PALETTE_GREEN;
-            }
-            else if(ter==Tile::TerrainType::TERRAIN_WATER)
-            {
-                *DRAW_COLORS=PALETTE_BLUE;
-            }
-            if(t.GetFeature()==Tile::Feature::FEATURE_TOWN1 || t.GetFeature()==Tile::Feature::FEATURE_TOWN2)
-            {
-                *DRAW_COLORS=PALETTE_BROWN;
-            }
-            line(x,y,x,y);
-        }
+        m_gamedata->m_quests[m_questidx].GetDescription(global::buff,global::buffsize);
+        tp.PrintWrapped(global::buff,1,60,global::buffsize,SCREEN_SIZE-2);
+        
     }
-    */
 
 }
 

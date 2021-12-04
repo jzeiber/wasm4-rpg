@@ -1,10 +1,12 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "map.h"
 #include "questdata.h"
 #include "mob.h"
+#include "gameevent.h"
 
 #define MOVE_NONE	0
 #define MOVE_LEFT	1
@@ -13,8 +15,9 @@
 #define MOVE_UP		8
 #define MAX_QUESTS  5
 
-#define MAX_GAMEMESSAGE 4
-#define MAX_MOBS        20
+#define MAX_GAMEMESSAGE     4
+#define MAX_MOBS            20
+#define MAX_QUEUE_EVENTS    5
 
 class GameData
 {
@@ -42,16 +45,21 @@ public:
     int64_t GetPlayerWorldY() const;
     */
 
-    bool WriteGameData(void *data) const;
+    bool WriteGameData(void *data);
     bool LoadGameData(void *data);
 
     void AddGameMessage(const char *message);
     int16_t GameMessageCount() const;
 
+    void QueueGameEvent(const int16_t gameevent, GameEventParam param);
+    void DispatchGameEvents();
+
+    void RecycleMobs(); // remove distant mobs and add close ones if needed
+
     Map &m_map;
     uint64_t m_ticks;
-    char m_gamemessages[MAX_GAMEMESSAGE][20];       // 20 x 4 = 80 bytse
-    uint64_t m_gamemessagedecay[MAX_GAMEMESSAGE];
+    char m_gamemessages[MAX_GAMEMESSAGE][32];       // 4 x 32 = 128 bytes
+    uint64_t m_gamemessagedecay[MAX_GAMEMESSAGE];   // 4 x 8 = 32 bytes
     uint8_t m_saveslot;
     uint64_t m_seed;
     int64_t m_playerworldx;
@@ -62,8 +70,10 @@ public:
     int8_t m_movedir;
     int8_t m_selectedmenu;
     uint32_t m_questscompleted;
-    QuestData m_quests[MAX_QUESTS]; // 5 quests at 25 bytes each = 125 bytes
-    Mob m_mobs[20];                 // 20 mobs at 16 bytes each = 320 bytes
+    QuestData m_quests[MAX_QUESTS];     // 5 quests at 25 bytes each = 125 bytes
+    Mob m_mobs[MAX_MOBS];               // 20 mobs at 18 bytes each = 360 bytes
+    int16_t m_queuedevent[MAX_QUEUE_EVENTS];
+    GameEventParam m_queuedeventparam[MAX_QUEUE_EVENTS];
 
 private:
 
