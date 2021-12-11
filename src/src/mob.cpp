@@ -320,7 +320,7 @@ void Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t 
     }
 
     // multiply health by factor for type
-    m_health=_max(1,static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0));
+    m_health=GetMaxHealth();
     m_flags=m_mobdata[m_type].flags;
 }
 
@@ -351,6 +351,15 @@ int16_t Mob::GetSpriteIdxY() const
     if(m_type>=0 && m_type<MobType::TYPE_MAX)
     {
         return m_mobdata[m_type].spriteidxy;
+    }
+    return 0;
+}
+
+int16_t Mob::GetMaxHealth() const
+{
+    if(m_type>=0 && m_type<MobType::TYPE_MAX)
+    {
+        return _max(1,static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0));
     }
     return 0;
 }

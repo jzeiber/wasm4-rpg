@@ -434,6 +434,10 @@ void StateGameOverworld::Draw()
                     const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
                     const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
                     blitMasked(spritecharacter,spritecharacterWidth,m_gamedata->m_mobs[i].GetSpriteIdxX(),m_gamedata->m_mobs[i].GetSpriteIdxY(),x*16+jx,y*16+jy,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
+                    if(m_gamedata->m_mobs[i].m_health!=m_gamedata->m_mobs[i].GetMaxHealth())
+                    {
+                        DrawMobHealth(x*16,y*16,m_gamedata->m_mobs[i].m_health,m_gamedata->m_mobs[i].GetMaxHealth());
+                    }
                 }
             }
 
@@ -589,6 +593,15 @@ void StateGameOverworld::DrawManaBar(const int16_t x, const int16_t y, const int
     rect(x,y,w,h);
     *DRAW_COLORS=(PALETTE_BLUE << 4);
     rect(x+2,y+2+((h-4)-mh),w-4,mh);
+}
+
+void StateGameOverworld::DrawMobHealth(const int16_t x, const int16_t y, const int16_t health, const int16_t maxhealth)
+{
+    const int16_t hpw=(static_cast<float>(health)/static_cast<double>(maxhealth))*14.0f;
+    *DRAW_COLORS=(PALETTE_WHITE << 4) | PALETTE_WHITE;
+    rect(x,y-2,16,3);
+    *DRAW_COLORS=(PALETTE_GREEN << 4) | PALETTE_GREEN;
+    rect(x+1,y-1,hpw,1);
 }
 
 int8_t StateGameOverworld::GetNextAvailableQuestIndex() const

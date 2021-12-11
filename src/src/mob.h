@@ -70,6 +70,8 @@ public:
     void SetQuestIndex(const int8_t questidx);  // set if monster is tied to quest
     int8_t GetQuestIndex() const;               // get if monster is tied to quest
 
+    int16_t GetMaxHealth() const;
+
     virtual void Update(const int ticks, Game *game);
 
     virtual bool HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param);
