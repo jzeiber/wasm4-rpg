@@ -27,7 +27,9 @@ public:
         TYPE_KILLAREAMONSTERS=5,
         TYPE_VISITANYTOWN=6,
         TYPE_ACCEPTQUESTS=7
+        // TYPE_PATROL
     };
+
 
     void Reset();
 

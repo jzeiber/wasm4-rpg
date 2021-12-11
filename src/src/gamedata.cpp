@@ -4,9 +4,6 @@
 #include "game.h"
 #include "gameevent.h"
 
-//debug
-#include "outputstringstream.h"
-
 GameData::GameData():m_map(Map::Instance()),m_ticks(0),m_saveslot(0),m_seed(0),m_playerworldx(0),m_playerworldy(0),m_playerlevel(0),m_playerexpnextlevel(0),m_movedir(MOVE_NONE),m_selectedmenu(0),m_questscompleted(0)
 {
     for(int i=0; i<MAX_QUEUE_EVENTS; i++)
@@ -117,11 +114,23 @@ bool GameData::LoadGameData(void *data)
         m_map.SetSize(mapsize);
         m_map.UpdateWorldPosition(m_playerworldx,m_playerworldy);
 
+        ClearGameMessages();
+        ClearGameEvents();
+
         m_selectedmenu=0;
 
         return true;
     }
     return false;
+}
+
+void GameData::ClearGameMessages()
+{
+    for(int i=0; i<MAX_GAMEMESSAGE; i++)
+    {
+        m_gamemessages[i][0]='\0';
+        m_gamemessagedecay[i]=0;
+    }
 }
 
 void GameData::AddGameMessage(const char *message)
@@ -193,7 +202,7 @@ void GameData::SetupNewGame(const uint64_t seed)
         m_queuedevent[i]=EVENT_NONE;
     }
 
-    // TODO - start travel distance quest
+    // start quests
     m_quests[0].SetActive(true);
     m_quests[0].m_sourcex=0;
     m_quests[0].m_sourcey=0;
@@ -203,6 +212,7 @@ void GameData::SetupNewGame(const uint64_t seed)
     m_quests[0].m_data[0]=50;
     m_quests[0].m_type=QuestData::TYPE_TRAVELDISTANCE;
     m_quests[0].SetHasSourceLocation(false);
+    m_quests[0].SetTutorial(true);
 
     m_quests[1].SetActive(true);
     m_quests[1].m_sourcex=0;
@@ -212,6 +222,7 @@ void GameData::SetupNewGame(const uint64_t seed)
     m_quests[1].m_progress=0;
     m_quests[1].m_type=QuestData::TYPE_VISITANYTOWN;
     m_quests[1].SetHasSourceLocation(false);
+    m_quests[1].SetTutorial(true);
 
     m_quests[2].SetActive(true);
     m_quests[2].m_sourcex=0;
@@ -222,11 +233,69 @@ void GameData::SetupNewGame(const uint64_t seed)
     m_quests[2].m_data[0]=5;
     m_quests[2].m_type=QuestData::TYPE_ACCEPTQUESTS;
     m_quests[2].SetHasSourceLocation(false);
+    m_quests[2].SetTutorial(true);
 
-    AddGameMessage("You have a new quest");
+    ClearGameMessages();
+    ClearGameEvents();
+    AddGameMessage("You have new quests");
+}
 
-    //debug
-    //m_playerhealth=m_playerhealth/4;
+bool GameData::WorldLocationOccupied(const int64_t worldx, const int64_t worldy, const int16_t ignoremobidx) const
+{
+    if(m_playerworldx==worldx && m_playerworldy==worldy)
+    {
+        return true;
+    }
+
+    for(int i=0; i<MAX_MOBS; i++)
+    {
+        if(i!=ignoremobidx && m_mobs[i].GetActive()==true && m_mobs[i].m_x==worldx && m_mobs[i].m_y==worldy)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool GameData::WorldLocationTown(const int64_t worldx, const int64_t worldy) const
+{
+    Tile t=m_map.GetTile(worldx,worldy);
+    if(t.GetFeature()==Tile::FEATURE_TOWN1 || t.GetFeature()==Tile::FEATURE_TOWN2)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool GameData::WorldLocationLand(const int64_t worldx, const int64_t worldy) const
+{
+    return m_map.GetTile(worldx,worldy).GetTerrainType()==Tile::TERRAIN_LAND;
+}
+
+bool GameData::WorldLocationWater(const int64_t worldx, const int64_t worldy) const
+{
+    return m_map.GetTile(worldx,worldy).GetTerrainType()==Tile::TERRAIN_WATER;
+}
+
+bool GameData::HostileWithinArea(const int64_t tlx, const int64_t tly, const int64_t brx, const int64_t bry)
+{
+    for(int64_t y=tly; y<=bry; y++)
+    {
+        for(int64_t x=tlx; x<=brx; x++)
+        {
+            const int64_t wx=m_map.WrapCoordinate(x);
+            const int64_t wy=m_map.WrapCoordinate(y);
+            for(int i=0; i<MAX_MOBS; i++)
+            {
+                if(m_mobs[i].GetActive()==true && m_mobs[i].m_x==x && m_mobs[i].m_y==wy)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 void GameData::SortClosestMobs(const int32_t x, const int32_t y)
@@ -276,24 +345,47 @@ void GameData::RecycleMobs()
         {
             if(m_mobs[i].GetActive()==false)
             {
+                m_mobs[i].Reset();
                 RandomMT r;
                 r.Seed(m_ticks);
-                m_mobs[i].SetActive(true);
-                m_mobs[i].SetHostile(true);
-                // TODO - get and send terrain type
-                m_mobs[i].CreateRandom(r,m_playerlevel,Tile::TERRAIN_LAND);
-                // TODO - set mob type
+
                 int16_t dx=0;
                 int16_t dy=0;
-                // TODO - don't place on town/unmovable/player pos
+                bool placementgood=false;
+                int16_t trycount=0;
+                // don't place on town/unmovable/player pos
                 do
                 {
-                    dx=(r.Next()%40)-20;
-                    dy=(r.Next()%40)-20;
-                }while(((dx*dx)+(dy*dy)) < 100);
-                
-                m_mobs[i].m_x=m_map.WrapCoordinate(m_playerworldx+dx);
-                m_mobs[i].m_y=m_map.WrapCoordinate(m_playerworldy+dy);
+                    placementgood=true;
+                    do
+                    {
+                        dx=(r.Next()%40)-20;
+                        dy=(r.Next()%40)-20;
+                    }while(((dx*dx)+(dy*dy)) < 100);
+                    
+                    m_mobs[i].m_x=m_map.WrapCoordinate(m_playerworldx+dx);
+                    m_mobs[i].m_y=m_map.WrapCoordinate(m_playerworldy+dy);
+
+                    if(
+                        m_map.MoveBlocked(m_mobs[i].m_x,m_mobs[i].m_y,m_mobs[i].m_x,m_mobs[i].m_y)==true ||
+                        WorldLocationTown(m_mobs[i].m_x,m_mobs[i].m_y)==true ||
+                        WorldLocationOccupied(m_mobs[i].m_x,m_mobs[i].m_y,i)==true
+                    )
+                    {
+                        placementgood=false;
+                    }
+
+                }while(placementgood==false && ++trycount<20);
+
+                if(trycount<20)
+                {
+                    const uint8_t terrain=m_map.GetTerrainType(m_mobs[i].m_x,m_mobs[i].m_y,true);
+                    m_mobs[i].CreateRandom(r,m_playerlevel,terrain);
+
+                    m_mobs[i].SetActive(true);
+                    m_mobs[i].SetHostile(true);
+                    m_mobs[i].SetAggressive(false); // ?? % chance to be aggressive?
+                }
 
                 break;
             }
@@ -337,4 +429,18 @@ void GameData::DispatchGameEvents()
             m_queuedevent[i]=EVENT_NONE;
         }
     }
+}
+
+void GameData::ClearGameEvents()
+{
+    for(int i=0; i<MAX_QUEUE_EVENTS; i++)
+    {
+        m_queuedevent[i]=EVENT_NONE;
+    }
+}
+
+int16_t GameData::GetPlayerMeleeAttack() const
+{
+    // TODO - calculate attack based on stats/equipment/bonuses
+    return m_playerlevel*2;
 }

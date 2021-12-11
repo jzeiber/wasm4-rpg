@@ -42,8 +42,9 @@ int16_t FontSystem::TextWidth(const char *text) const
     return w*8;
 }
 
-void FontSystem::PutChar(const char c, const int16_t x, const int16_t y) const
+void FontSystem::PutChar(const char c, const int16_t x, const int16_t y, const uint16_t color) const
 {
+    *DRAW_COLORS=color;
     char t[2]={c,'\0'};
     text(t,x,y);
 }

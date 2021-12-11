@@ -7,10 +7,10 @@ void GenerateTownName(const uint64_t seed, char *name, const int16_t len)
     RandomMT &r=RandomMT::Instance();
     int16_t pos=0;
     int16_t lenleft=len;
-    const int8_t prefixcount=2;
-    const int8_t directioncount=4;
-    const int8_t basecount=23;
-    const int8_t suffixcount=11;
+    constexpr int8_t prefixcount=2;
+    constexpr int8_t directioncount=4;
+    constexpr int8_t basecount=23;
+    constexpr int8_t suffixcount=11;
     static char *prefix[]={{"Olde"},{"New"}};
     static char *direction[]={{"North"},{"East"},{"South"},{"West"}};
     static char *base[]={{"Bogo"},{"Breeze"},{"Bridge"},{"Bright"},{"Eagle"},{"Ever"},{"Feather"},{"Flower"},{"Fox"},{"Haver"},{"Living"},{"Moss"},{"Nettle"},{"Pine"},{"Pinker"},{"Plump"},{"River"},{"Rock"},{"Stock"},{"Sun"},{"Turtle"},{"Whistle"},{"Wood"}};

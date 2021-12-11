@@ -25,6 +25,7 @@ StateMainMenu &StateMainMenu::Instance()
 
 void StateMainMenu::StateChanged(const uint8_t prevstate, void *params)
 {
+    m_changestate=0;
     if(params)
     {
         m_game=(Game *)params;
@@ -49,9 +50,13 @@ bool StateMainMenu::HandleInput(const Input *input)
             m_selectedslot=2;
         }
     }
-    if((input->GamepadButtonPress(1,BUTTON_1)==true || input->GamepadButtonPress(1,BUTTON_2)==true) && m_selectedslot>=0 && m_selectedslot<2)
+    if(input->GamepadButtonPress(1,BUTTON_1)==true && m_selectedslot>=0 && m_selectedslot<2)
     {
         m_showdialog=true;
+    }
+    if(input->GamepadButtonPress(1,BUTTON_1)==true && m_selectedslot==2)
+    {
+        m_changestate=Game::STATE_SETTINGS;
     }
     return true;
 }
@@ -152,32 +157,16 @@ void StateMainMenu::Update(const int ticks, Game *game=nullptr)
 
 void StateMainMenu::Draw()
 {
-    *DRAW_COLORS=PALETTE_WHITE;
     TextPrinter tp;
-    tp.PrintCentered("WASM-4 RPG",SCREEN_SIZE/2,15,128);
+    tp.PrintCentered("WASM-4 RPG",SCREEN_SIZE/2,15,128,PALETTE_WHITE);
 
-    *DRAW_COLORS=PALETTE_WHITE;
-    text("MENU",80-((4*8)/2),40);
+    tp.PrintCentered("MENU",SCREEN_SIZE/2,40,128,PALETTE_WHITE);
 
-    text("Slot 1",40,60);
-    if(m_game->SaveSlotUsed(0))
-    {
-        text("Continue",40,70);
-    }
-    else
-    {
-        text("New Game",40,70);
-    }
-    text("Slot 2",40,90);
-    if(m_game->SaveSlotUsed(1))
-    {
-        text("Continue",40,100);
-    }
-    else
-    {
-        text("New Game",40,100);
-    }
-    text("Settings",40,124);
+    tp.Print("Slot 1",40,60,128,(m_selectedslot==0 ? PALETTE_GREEN : PALETTE_WHITE));
+    tp.Print(m_game->SaveSlotUsed(0) ? "Continue" : "New Game",40,70,128,(m_selectedslot==0 ? PALETTE_GREEN : PALETTE_WHITE));
+    tp.Print("Slot 2",40,90,128,(m_selectedslot==1 ? PALETTE_GREEN : PALETTE_WHITE));
+    tp.Print(m_game->SaveSlotUsed(1) ? "Continue" : "New Game",40,100,128,(m_selectedslot==1 ? PALETTE_GREEN : PALETTE_WHITE));
+    tp.Print("Settings",40,124,128,(m_selectedslot==2 ? PALETTE_GREEN : PALETTE_WHITE));
 
     if(m_selectedslot>=0 && m_selectedslot<3)
     {

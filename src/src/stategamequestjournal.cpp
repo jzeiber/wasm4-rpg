@@ -119,16 +119,15 @@ void StateGameQuestJournal::Update(const int ticks, Game *game)
 
 void StateGameQuestJournal::Draw()
 {
-    *DRAW_COLORS=PALETTE_WHITE;
     TextPrinter tp;
     tp.SetCustomFont(&Font5x7::Instance());
 
-    tp.PrintCentered("Quest Journal",SCREEN_SIZE/2,1,128);
+    tp.PrintCentered("Quest Journal",SCREEN_SIZE/2,1,128,PALETTE_WHITE);
 
     snprintf(global::buff,global::buffsize,"Completed : %u",m_gamedata->m_questscompleted);
-    tp.PrintWrapped(global::buff,1,15,128,SCREEN_SIZE-2);
+    tp.PrintWrapped(global::buff,1,15,128,SCREEN_SIZE-2,PALETTE_WHITE);
 
-    tp.PrintCentered("Active Quests",SCREEN_SIZE/2,45,128);
+    tp.PrintCentered("Active Quests",SCREEN_SIZE/2,45,128,PALETTE_WHITE);
 
     if(HavePreviousActiveQuest(m_questidx)==true)
     {
@@ -142,13 +141,11 @@ void StateGameQuestJournal::Draw()
     }
     if(HavePreviousActiveQuest(m_questidx)==false && HaveNextActiveQuest(m_questidx)==false && (m_questidx<0 || m_questidx>=MAX_QUESTS || m_gamedata->m_quests[m_questidx].GetActive()==false))
     {
-        *DRAW_COLORS=PALETTE_WHITE;
-        tp.PrintCentered("No Active Quests",SCREEN_SIZE/2,100,128);
+        tp.PrintCentered("No Active Quests",SCREEN_SIZE/2,100,128,PALETTE_WHITE);
     }
     
     if(m_questidx>=0 && m_questidx<MAX_QUESTS && m_gamedata->m_quests[m_questidx].GetActive()==true)
     {
-        *DRAW_COLORS=PALETTE_WHITE;
         /*
         const int64_t qx=m_gamedata->m_quests[m_questidx].m_sourcex;
         const int64_t qy=m_gamedata->m_quests[m_questidx].m_sourcey;
@@ -233,7 +230,7 @@ void StateGameQuestJournal::Draw()
         */
 
         m_gamedata->m_quests[m_questidx].GetDescription(global::buff,global::buffsize);
-        tp.PrintWrapped(global::buff,1,60,global::buffsize,SCREEN_SIZE-2);
+        tp.PrintWrapped(global::buff,1,60,global::buffsize,SCREEN_SIZE-2,PALETTE_WHITE);
         
     }
 

@@ -3,6 +3,7 @@
 #include "game.h"
 #include "miscfuncs.h"
 #include "gameio.h"
+#include "wasmmath.h"
 
 Mob::Mob():m_flags(0),m_type(0),m_level(0),m_health(0),m_x(0),m_y(0),m_data{0,0,0,0}
 {
@@ -12,6 +13,20 @@ Mob::Mob():m_flags(0),m_type(0),m_level(0),m_health(0),m_x(0),m_y(0),m_data{0,0,
 Mob::~Mob()
 {
 
+}
+
+void Mob::Reset()
+{
+    m_flags=0;
+    m_type=0;
+    m_level=0;
+    m_health=0;
+    m_x=0;
+    m_y=0;
+    m_data[0]=0;
+    m_data[1]=0;
+    m_data[2]=0;
+    m_data[3]=0;
 }
 
 void Mob::SetFlag(const uint16_t flag, const bool val)
@@ -42,6 +57,36 @@ bool Mob::GetHostile() const
 void Mob::SetHostile(const bool hostile)
 {
     SetFlag(FLAG_HOSTILE,hostile);
+}
+
+bool Mob::GetAggressive() const
+{
+    return GetFlag(FLAG_AGGRESSIVE);
+}
+
+void Mob::SetAggressive(const bool aggressive)
+{
+    SetFlag(FLAG_AGGRESSIVE,aggressive);
+}
+
+bool Mob::GetTravelWater() const
+{
+    return GetFlag(FLAG_TRAVELWATER);
+}
+
+void Mob::SetTravelWater(const bool travelwater)
+{
+    SetFlag(FLAG_TRAVELWATER,travelwater);
+}
+
+bool Mob::GetTravelLand() const
+{
+    return GetFlag(FLAG_TRAVELLAND);
+}
+
+void Mob::SetTravelLand(const bool travelland)
+{
+    SetFlag(FLAG_TRAVELLAND,travelland);
 }
 
 bool Mob::WriteMobData(void *data) const
@@ -141,6 +186,7 @@ int8_t Mob::GetQuestIndex() const
 
 bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param)
 {
+    bool trymove=false;
     if(eventtype==EVENT_PLAYERATTACK && param.m_targetmob==this)
     {
         if(m_health<param.m_int16[0])
@@ -151,10 +197,86 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
         }
         else
         {
-            m_health-=param.m_int16[0]; 
+            m_health-=param.m_int16[0];
+            SetAggressive(true);
             gamedata->AddGameMessage("Attacked Mob");
         }
     }
+    if(eventtype==EVENT_PLAYERATTACK || eventtype==EVENT_PLAYERMOVE)
+    {
+        trymove=true;
+    }
+
+    if(trymove==true)
+    {
+        RandomMT r;
+        r.Seed(gamedata->m_ticks+m_x+m_y);
+        const int16_t xdist=gamedata->m_map.ComputeDistanceCoord(m_x,gamedata->m_playerworldx);
+        const int16_t ydist=gamedata->m_map.ComputeDistanceCoord(m_y,gamedata->m_playerworldy);
+        // move toward player if within 4 spaces
+        if((xdist>1 || ydist>1) && xdist<=4 && ydist<=4)
+        {
+            if(GetAggressive()==true || (r.Next()%3)==0)
+            {
+                int16_t dx=0;
+                int16_t dy=0;
+                float a=gamedata->m_map.ComputeAngle(m_x,m_y,gamedata->m_playerworldx,gamedata->m_playerworldy);
+                if((m_x!=gamedata->m_playerworldx || r.Next()%5==0) && (a<M_PI_2 || a>(M_PI+M_PI_2)))
+                {
+                    dx=1;
+                }
+                else if((m_x!=gamedata->m_playerworldx || r.Next()%5==0) && (a>M_PI_2 && a<(M_PI+M_PI_2)))
+                {
+                    dx=-1;
+                }
+                // -/+ y flipped on map
+                if((m_y!=gamedata->m_playerworldy || r.Next()%5==0) && a<M_PI)
+                {
+                    dy=1;
+                }
+                else if((m_y!=gamedata->m_playerworldy || r.Next()%5==0) && a>M_PI)
+                {
+                    dy=-1;
+                }
+                int64_t newx=gamedata->m_map.WrapCoordinate(m_x+dx);
+                int64_t newy=gamedata->m_map.WrapCoordinate(m_y+dy);
+                if(gamedata->m_map.MoveBlocked(m_x,m_y,newx,newy)==false && gamedata->WorldLocationOccupied(newx,newy)==false && gamedata->WorldLocationTown(newx,newy)==false &&
+                ((GetTravelLand()==true && gamedata->WorldLocationLand(newx,newy)==true) || (GetTravelWater()==true && gamedata->WorldLocationWater(newx,newy)==true))
+                )
+                {
+                    m_x=newx;
+                    m_y=newy;
+                }
+                else if(newx!=m_x && gamedata->m_map.MoveBlocked(m_x,m_y,newx,m_y)==false && gamedata->WorldLocationOccupied(newx,m_y)==false && gamedata->WorldLocationTown(newx,m_y)==false &&
+                ((GetTravelLand()==true && gamedata->WorldLocationLand(newx,m_y)==true) || (GetTravelWater()==true && gamedata->WorldLocationWater(newx,m_y)==true))
+                )
+                {
+                    m_x=newx;
+                }
+                else if(newy!=m_y && gamedata->m_map.MoveBlocked(m_x,m_y,m_x,newy)==false && gamedata->WorldLocationOccupied(m_x,newy)==false && gamedata->WorldLocationTown(m_x,newy)==false &&
+                ((GetTravelLand()==true && gamedata->WorldLocationLand(m_x,newy)==true) || (GetTravelWater()==true && gamedata->WorldLocationWater(m_x,newy)==true))
+                )
+                {
+                    m_y=newy;
+                }
+            }
+        }
+        // TODO attack player
+        else if(GetHostile()==true && xdist<=1 && ydist<=1)
+        {
+            // TODO - calculate damage done
+            int16_t damage=1;
+            if(gamedata->m_playerhealth >= damage)
+            {
+                gamedata->m_playerhealth-=damage;
+            }
+            else
+            {
+                gamedata->m_playerhealth=0;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -163,7 +285,72 @@ void Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t 
     SetActive(true);
     // TODO - change distribution of level
     m_level=_max(1,playerlevel+(rand.Next()%3)-1);
-    // TODO - set random type for terrain
-    // TODO - multiple health by factor for type
-    m_health=Game::Instance().GetLevelMaxHealth(m_level);
+    
+    //set random type for terrain
+    {
+        m_type=0;
+        int32_t total=0;
+        for(int i=0; i<MobType::TYPE_MAX; i++)
+        {
+            if(
+                ((m_mobdata[i].flags & FLAG_TRAVELLAND)==FLAG_TRAVELLAND && terraintype==Tile::TERRAIN_LAND) || 
+                ((m_mobdata[i].flags & FLAG_TRAVELWATER)==FLAG_TRAVELWATER && terraintype==Tile::TERRAIN_WATER)
+            )
+            {
+                total+=m_mobdata[i].probability;
+            }
+        }
+        int32_t val=rand.Next()%total;
+        int32_t current=0;
+        for(int i=0; i<MobType::TYPE_MAX; i++)
+        {
+            if(
+                ((m_mobdata[i].flags & FLAG_TRAVELLAND)==FLAG_TRAVELLAND && terraintype==Tile::TERRAIN_LAND) || 
+                ((m_mobdata[i].flags & FLAG_TRAVELWATER)==FLAG_TRAVELWATER && terraintype==Tile::TERRAIN_WATER)
+            )
+            {
+                current+=m_mobdata[i].probability;
+                if(current>val)
+                {
+                    m_type=i;
+                    break;
+                }
+            }
+        }
+    }
+
+    // multiply health by factor for type
+    m_health=_max(1,static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0));
+    m_flags=m_mobdata[m_type].flags;
+}
+
+uint8_t Mob::GetType() const
+{
+    return m_type;
+}
+
+void Mob::SetType(const uint8_t type)
+{
+    if(type>=0 && type<MobType::TYPE_MAX)
+    {
+        m_type=type;
+    }
+}
+
+int16_t Mob::GetSpriteIdxX() const
+{
+    if(m_type>=0 && m_type<MobType::TYPE_MAX)
+    {
+        return m_mobdata[m_type].spriteidxx;
+    }
+    return 0;
+}
+
+int16_t Mob::GetSpriteIdxY() const
+{
+    if(m_type>=0 && m_type<MobType::TYPE_MAX)
+    {
+        return m_mobdata[m_type].spriteidxy;
+    }
+    return 0;
 }

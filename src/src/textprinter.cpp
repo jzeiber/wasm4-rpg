@@ -27,7 +27,7 @@ int16_t TextPrinter::LineHeight() const
     return m_font->LineHeight();
 }
 
-void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, const int16_t len) const
+void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, const int16_t len, const uint16_t color) const
 {
     if(text)
     {
@@ -44,7 +44,7 @@ void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, cons
                 }
                 else
                 {
-                    PutChar(text[i],xpos,ypos);
+                    PutChar(text[i],xpos,ypos,color);
                     xpos+=m_font->CharWidth(text[i]);
                 }
             }
@@ -56,21 +56,21 @@ void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, cons
     }
 }
 
-void TextPrinter::PrintWrapped(const char *text, const int16_t x, const int16_t y, const int16_t len, const int16_t maxwidth) const
+void TextPrinter::PrintWrapped(const char *text, const int16_t x, const int16_t y, const int16_t len, const int16_t maxwidth, const uint16_t color) const
 {
     int16_t yp=y;
     int16_t pos=0;
     int16_t wp=WrapPos(text,maxwidth);
     while(text[pos] && wp>=0)
     {
-        Print(&text[pos],x,yp,wp+1);
+        Print(&text[pos],x,yp,wp+1,color);
         pos+=(wp+1);
         yp+=LineHeight();
         wp=WrapPos(&text[pos],maxwidth);
     }
 }
 
-void TextPrinter::PrintCentered(const char *text, const int16_t cx, const int16_t y, const int16_t len) const
+void TextPrinter::PrintCentered(const char *text, const int16_t cx, const int16_t y, const int16_t len, const uint16_t color) const
 {
     char buff[32];
     int16_t tlen=0;
@@ -81,12 +81,12 @@ void TextPrinter::PrintCentered(const char *text, const int16_t cx, const int16_
     }
     tlen=(tlen<len ? tlen : len);
     buff[tlen]='\0';
-    Print(text,cx-(m_font->TextWidth(buff)/2),y,len);
+    Print(text,cx-(m_font->TextWidth(buff)/2),y,len,color);
 }
 
-void TextPrinter::PutChar(const char c, const int16_t x, const int16_t y) const
+void TextPrinter::PutChar(const char c, const int16_t x, const int16_t y, const uint16_t color) const
 {
-    m_font->PutChar(c,x,y);
+    m_font->PutChar(c,x,y,color);
 }
 
 int16_t TextPrinter::WrapPos(const char *text, const int16_t maxwidth) const

@@ -12,8 +12,9 @@
 #include "textprinter.h"
 #include "questcache.h"
 #include "gameevent.h"
+#include "drawfuncs.h"
 
-StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_cursormode(MODE_MOVE),m_cursorx(0),m_cursory(0),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_tick(0)
+StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_cursormode(MODE_MOVE),m_cursorx(0),m_cursory(0),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_lastrepeattick(0),m_tick(0)
 {
 
 }
@@ -38,6 +39,7 @@ void StateGameOverworld::StateChanged(const uint8_t prevstate, void *params)
     m_tick=0;
     m_changestate=-1;
     m_lastmovetick=0;
+    m_lastrepeattick=0;
     m_savegame=false;
     m_cursormode=MODE_MOVE;
     m_cursorx=0;
@@ -49,6 +51,7 @@ bool StateGameOverworld::HandleInput(const Input *input)
     int64_t dx=0;
     int64_t dy=0;
     bool domove=false;
+    bool repeat=false;
     if(input->GamepadButtonDown(1,BUTTON_RIGHT))
     {
         domove=false;
@@ -57,9 +60,10 @@ bool StateGameOverworld::HandleInput(const Input *input)
             m_lastmovetick=m_tick;
             domove=true;
         }
-        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick)
+        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick && m_lastrepeattick+Settings::Instance().GetMoveRepeat()<=m_tick)
         {
             domove=true;
+            repeat=true;
         }
         if(domove==true)
         {
@@ -75,9 +79,10 @@ bool StateGameOverworld::HandleInput(const Input *input)
             m_lastmovetick=m_tick;
             domove=true;
         }
-        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick)
+        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick && m_lastrepeattick+Settings::Instance().GetMoveRepeat()<=m_tick)
         {
             domove=true;
+            repeat=true;
         }
         if(domove==true)
         {
@@ -93,9 +98,10 @@ bool StateGameOverworld::HandleInput(const Input *input)
             m_lastmovetick=m_tick;
             domove=true;
         }
-        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick)
+        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick && m_lastrepeattick+Settings::Instance().GetMoveRepeat()<=m_tick)
         {
             domove=true;
+            repeat=true;
         }
         if(domove==true)
         {
@@ -111,9 +117,10 @@ bool StateGameOverworld::HandleInput(const Input *input)
             m_lastmovetick=m_tick;
             domove=true;
         }
-        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick)
+        else if(m_lastmovetick+Settings::Instance().GetMoveDelay()<=m_tick && m_lastrepeattick+Settings::Instance().GetMoveRepeat()<=m_tick)
         {
             domove=true;
+            repeat=true;
         }
         if(domove==true)
         {
@@ -126,6 +133,11 @@ bool StateGameOverworld::HandleInput(const Input *input)
         bool domove=true;
         const int64_t newx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+dx);
         const int64_t newy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+dy);
+
+        if(repeat==true)
+        {
+            m_lastrepeattick=m_tick;
+        }
 
         if(m_gamedata->m_map.MoveBlocked(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,newx,newy)==true)
         {
@@ -142,7 +154,7 @@ bool StateGameOverworld::HandleInput(const Input *input)
                 {
                     GameEventParam ge;
                     ge.m_targetmob=&m_gamedata->m_mobs[i];
-                    ge.m_int16[0]=1;    // damage
+                    ge.m_int16[0]=m_gamedata->GetPlayerMeleeAttack();    // damage
                     m_gamedata->QueueGameEvent(EVENT_PLAYERATTACK,ge);
                 }
             }
@@ -181,7 +193,20 @@ bool StateGameOverworld::HandleInput(const Input *input)
         {
             m_changestate=Game::STATE_GAMEMAP;
         }
-        if(m_gamedata->m_selectedmenu==OPTION_INVENTORY || m_gamedata->m_selectedmenu==OPTION_REST || m_gamedata->m_selectedmenu==OPTION_CHARACTER)
+        if(m_gamedata->m_selectedmenu==OPTION_REST)
+        {
+            if(m_gamedata->HostileWithinArea(m_gamedata->m_playerworldx-4,m_gamedata->m_playerworldy-4,m_gamedata->m_playerworldx+4,m_gamedata->m_playerworldy+4)==false)
+            {
+                // TODO - potential to interrupt with mob
+                m_gamedata->AddGameMessage("Rested");
+                m_gamedata->m_playerhealth=Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel);
+            }
+            else
+            {
+                m_gamedata->AddGameMessage("You can't rest now");
+            }
+        }
+        if(m_gamedata->m_selectedmenu==OPTION_INVENTORY || m_gamedata->m_selectedmenu==OPTION_CHARACTER)
         {
             m_gamedata->AddGameMessage("Not Implemented Yet");
         }
@@ -204,6 +229,12 @@ bool StateGameOverworld::HandleInput(const Input *input)
 void StateGameOverworld::Update(const int ticks, Game *game)
 {
     m_tick=game->GetTicks();
+
+    if(game->GetGameData().m_playerhealth<=0)
+    {
+        m_changestate=Game::STATE_GAMEOVER;
+    }
+
     if(m_changestate>=0)
     {
         switch(m_changestate)
@@ -213,6 +244,7 @@ void StateGameOverworld::Update(const int ticks, Game *game)
             break;
         case Game::STATE_GAMEMAP:
         case Game::STATE_GAMEQUESTJOURNAL:
+        case Game::STATE_GAMEOVER:
             game->ChangeState(m_changestate,m_gamedata);
             break;
         default:
@@ -233,7 +265,7 @@ void StateGameOverworld::Update(const int ticks, Game *game)
             m_tempquest.Reset();
             if(QuestCache::Instance().GetCache(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest)==false)
             {
-                GenerateQuest(game->GetTicks(),m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_tempquest);
+                GenerateQuest(game->GetTicks(),m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata,m_tempquest);
                 QuestCache::Instance().AddCache(m_tempquest,m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_ticks);
             }
             /*
@@ -347,7 +379,7 @@ void StateGameOverworld::Update(const int ticks, Game *game)
 
 void StateGameOverworld::Draw()
 {
-    const int16_t viewsize=144;
+    constexpr int16_t viewsize=144;
     for(int64_t y=0; y<9; y++)
     {
         for(int64_t x=0; x<9; x++)
@@ -356,79 +388,54 @@ void StateGameOverworld::Draw()
             const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
             m_gamedata->m_map.DrawTile(wx,wy,x*16,y*16);
 
-            for(int i=0; i<MAX_MOBS; i++)
-            {
-                //if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
-                /*
-                if((i==0 && x==2 && y==2) || (i==1 && x==6 && y==4))
-                {
-                    // a little jitter for the monster sprite
-                    m_gamedata->m_mobs[i].m_x=wx;
-                    m_gamedata->m_mobs[i].m_y=wy;
-                    m_gamedata->m_mobs[i].Update(1,m_gamedata);
-                    //const int16_t jx=(((m_gamedata->m_ticks+x)/10)%3)-1;
-                    //const int16_t jy=(((m_gamedata->m_ticks+y)/10)%3)-1;
-                    const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
-                    const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
-                    *DRAW_COLORS=(PALETTE_WHITE << 4);
-                    blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(5*16),spritecharacterWidth,spritecharacterFlags);
-                    *DRAW_COLORS=(PALETTE_BROWN << 4);
-                    blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(4*16),spritecharacterWidth,spritecharacterFlags);
-                }
-                */
-               if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
-               {
-                   const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
-                   const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
-                   *DRAW_COLORS=(PALETTE_WHITE << 4);
-                   blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(5*16),spritecharacterWidth,spritecharacterFlags);
-                   *DRAW_COLORS=(PALETTE_BROWN << 4);
-                   blitSub(spritecharacter,x*16+jx,y*16+jy,16,16,(9*16),(4*16),spritecharacterWidth,spritecharacterFlags);
-               }
-            }
-
 			if(wx==m_gamedata->m_playerworldx && wy==m_gamedata->m_playerworldy)
 			{
 				*DRAW_COLORS=(PALETTE_BROWN << 4);
 				if(m_gamedata->m_map.GetTerrainType(wx,wy,true)==Tile::TERRAIN_LAND)
 				{
-                    *DRAW_COLORS=(PALETTE_WHITE << 4);
-                    blitSub(spritecharacter,x*16,y*16,16,16,(3*16),(1*16),spritecharacterWidth,spritecharacterFlags);
-                    *DRAW_COLORS=(PALETTE_BROWN << 4);
-                    blitSub(spritecharacter,x*16,y*16,16,16,(3*16),(0*16),spritecharacterWidth,spritecharacterFlags);
+                    blitMasked(spritecharacter,spritecharacterWidth,3,0,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
 				}
 				else
 				{
                     if(m_gamedata->m_movedir==MOVE_LEFT)
                     {
-                        *DRAW_COLORS=(PALETTE_WHITE << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(10*16),(11*16),spritecharacterWidth,spritecharacterFlags|BLIT_FLIP_X);
-                        *DRAW_COLORS=(PALETTE_BROWN << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(10*16),(10*16),spritecharacterWidth,spritecharacterFlags|BLIT_FLIP_X);
+                        blitMasked(spritecharacter,spritecharacterWidth,10,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags|BLIT_FLIP_X);
                     }
                     else if(m_gamedata->m_movedir==MOVE_UP || m_gamedata->m_movedir==MOVE_NONE)
                     {
-                        *DRAW_COLORS=(PALETTE_WHITE << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(8*16),(11*16),spritecharacterWidth,spritecharacterFlags);                        
-                        *DRAW_COLORS=(PALETTE_BROWN << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(8*16),(10*16),spritecharacterWidth,spritecharacterFlags);
+                        blitMasked(spritecharacter,spritecharacterWidth,8,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                     }
                     else if(m_gamedata->m_movedir==MOVE_RIGHT)
                     {
-                        *DRAW_COLORS=(PALETTE_WHITE << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(10*16),(11*16),spritecharacterWidth,spritecharacterFlags);
-                        *DRAW_COLORS=(PALETTE_BROWN << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(10*16),(10*16),spritecharacterWidth,spritecharacterFlags);
+                        blitMasked(spritecharacter,spritecharacterWidth,10,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                     }
                     else if(m_gamedata->m_movedir==MOVE_DOWN)
                     {
-                        *DRAW_COLORS=(PALETTE_WHITE << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(9*16),(11*16),spritecharacterWidth,spritecharacterFlags);
-                        *DRAW_COLORS=(PALETTE_BROWN << 4);
-                        blitSub(spritecharacter,x*16,y*16,16,16,(9*16),(10*16),spritecharacterWidth,spritecharacterFlags);
+                        blitMasked(spritecharacter,spritecharacterWidth,9,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                     }
 				}
 			}
+
+        }
+    }
+
+    // mob sprite may overlap surrounding terrain, so draw after entire terrain is drawn
+    for(int64_t y=0; y<9; y++)
+    {
+        for(int64_t x=0; x<9; x++)
+        {
+            const uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
+            const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
+
+            for(int i=0; i<MAX_MOBS; i++)
+            {
+                if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
+                {
+                    const int16_t jx=m_gamedata->m_mobs[i].GetJitterX();
+                    const int16_t jy=m_gamedata->m_mobs[i].GetJitterY();
+                    blitMasked(spritecharacter,spritecharacterWidth,m_gamedata->m_mobs[i].GetSpriteIdxX(),m_gamedata->m_mobs[i].GetSpriteIdxY(),x*16+jx,y*16+jy,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
+                }
+            }
 
         }
     }
@@ -488,12 +495,6 @@ void StateGameOverworld::Draw()
     }
 
     // health
-    {
-        //int16_t hp=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*16;
-        //rect(SCREEN_SIZE-14,1,6,20);
-        //rect(SCREEN_SIZE-12,3+(16-hp),2,hp);
-        //DrawHealthBar(SCREEN_SIZE-7,1,6,20);
-    }
     DrawHealthBar(SCREEN_SIZE-15,1,6,20);
     DrawManaBar(SCREEN_SIZE-7,1,6,20);
 
@@ -505,7 +506,7 @@ void StateGameOverworld::Draw()
         {
             TextPrinter tp;
             tp.SetCustomFont(&Font5x7::Instance());
-            tp.Print(m_gamedata->m_gamemessages[i],10,tpos,20);
+            tp.Print(m_gamedata->m_gamemessages[i],10,tpos,20,PALETTE_WHITE);
             tpos+=8;
         }
     }
@@ -567,14 +568,17 @@ void StateGameOverworld::DrawMenuBar()
 
 void StateGameOverworld::DrawHealthBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
 {
-    int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
+    const int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
+
     *DRAW_COLORS=(PALETTE_WHITE << 4);
     rect(x,y,w,h);
     //if(hp>?? || (m_gamedata->m_ticks/10)%3<2)    // blink if low
+    if(hph>0)
     {
         *DRAW_COLORS=(PALETTE_GREEN << 4);
         rect(x+2,y+2+((h-4)-hph),w-4,hph);
     }
+
 }
 
 void StateGameOverworld::DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)

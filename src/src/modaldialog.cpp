@@ -93,7 +93,6 @@ void ModalDialog::Draw()
     *DRAW_COLORS=PALETTE_BROWN | (PALETTE_WHITE << 4);
     rect(TextStartXPos()-4,TextStartYPos()-4,m_textwidth+8,EntireHeight()+8);
 
-    *DRAW_COLORS=PALETTE_WHITE;
     TextPrinter tp;
     tp.SetCustomFont(m_font);
     int16_t pos=0;
@@ -110,7 +109,7 @@ void ModalDialog::Draw()
         {
             len=192;
         }
-        tp.Print(&m_text[pos],xpos,ypos,len);
+        tp.Print(&m_text[pos],xpos,ypos,len,PALETTE_WHITE);
         pos+=len;
         ypos+=tp.LineHeight();
     }
@@ -121,7 +120,7 @@ void ModalDialog::Draw()
     {
         if(m_options[i][0]!='\0')
         {
-            tp.PrintCentered(m_options[i],xpos,ypos,10);
+            tp.PrintCentered(m_options[i],xpos,ypos,10,PALETTE_WHITE);
             xpos+=(m_textwidth/2);
         }
         if(i==1)

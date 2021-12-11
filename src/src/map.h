@@ -38,6 +38,8 @@ public:
 	float ComputeAngle(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
 	float ComputeDistance(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
 	float ComputeDistanceSq(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
+	int64_t ComputeDistanceManhattan(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const;
+	int64_t ComputeDistanceCoord(const int64_t source, const int64_t dest) const;
 	
 private:
 

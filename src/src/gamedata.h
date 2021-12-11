@@ -48,11 +48,21 @@ public:
     bool WriteGameData(void *data);
     bool LoadGameData(void *data);
 
+    void ClearGameMessages();
     void AddGameMessage(const char *message);
     int16_t GameMessageCount() const;
 
     void QueueGameEvent(const int16_t gameevent, GameEventParam param);
     void DispatchGameEvents();
+    void ClearGameEvents();
+
+    bool WorldLocationOccupied(const int64_t worldx, const int64_t worldy, const int16_t ignoremobidx=-1) const;
+    bool WorldLocationTown(const int64_t worldx, const int64_t worldy) const;
+    bool WorldLocationLand(const int64_t worldx, const int64_t worldy) const;
+    bool WorldLocationWater(const int64_t worldx, const int64_t worldy) const;
+
+    int16_t GetPlayerMeleeAttack() const;
+    bool HostileWithinArea(const int64_t tlx, const int64_t tly, const int64_t brx, const int64_t bry); // returns true if hostile mob within area - coords should be unwrapped (tl must always be less or equal to br)
 
     void RecycleMobs(); // remove distant mobs and add close ones if needed
 

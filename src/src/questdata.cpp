@@ -5,6 +5,7 @@
 #include "questcache.h"
 #include "outputstringstream.h"
 #include "miscfuncs.h"
+#include "generatortownname.h"
 
 QuestData::QuestData()
 {
@@ -53,25 +54,21 @@ bool QuestData::GetSelected() const
 
 void QuestData::SetActive(const bool active)
 {
-    //m_flags=(m_flags & ~FLAG_ACTIVE) | (active ? FLAG_ACTIVE : 0);
     SetFlag(FLAG_ACTIVE,active);
 }
 
 void QuestData::SetSelected(const bool selected)
 {
-    //m_flags=(m_flags & ~FLAG_SELECTED) | (selected ? FLAG_SELECTED : 0);
     SetFlag(FLAG_SELECTED,selected);
 }
 
 void QuestData::SetHasSourceLocation(const bool hassourceloc)
 {
-    //m_flags=(m_flags & ~FLAG_SOURCELOC) | (hassourceloc ? FLAG_SOURCELOC : 0);
     SetFlag(FLAG_SOURCELOC,hassourceloc);
 }
 
 bool QuestData::HasSourceLocation() const
 {
-    //return (m_flags & FLAG_SOURCELOC)==FLAG_SOURCELOC;
     return GetFlag(FLAG_SOURCELOC);
 }
 
@@ -224,6 +221,14 @@ void QuestData::GetQuestGiverDescription(char *desc, const int16_t len)
     OutputStringStream ostr;
 
     //snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
+
+    if(HasSourceLocation()==true)
+    {
+        char town[32];
+        town[31]='\0';
+        GenerateTownName(((static_cast<uint64_t>(m_sourcex) << 32) | static_cast<uint64_t>(m_sourcey)),town,31);
+        ostr << "The villagers in " << town << " have need of your services.\n\n";
+    }
 
     switch(m_type)
     {

@@ -453,3 +453,24 @@ float Map::ComputeDistanceSq(const int64_t sourcex, const int64_t sourcey, const
 
 	return ((sx-dx)*(sx-dx))+((sy-dy)*(dy-dy));
 }
+
+int64_t Map::ComputeDistanceCoord(const int64_t source, const int64_t dest) const
+{
+	int64_t s=source;
+	int64_t d=dest;
+	UnwrapCoordinates(s,d,s,d);
+
+	return (s<d ? d-s : s-d);
+}
+
+int64_t Map::ComputeDistanceManhattan(const int64_t sourcex, const int64_t sourcey, const int64_t destx, const int64_t desty) const
+{
+	int64_t sx=sourcex;
+	int64_t sy=sourcey;
+	int64_t dx=destx;
+	int64_t dy=desty;
+	UnwrapCoordinates(sx,dx,sx,dx);
+	UnwrapCoordinates(sy,dy,sy,dy);
+
+	return (sx<dx ? dx-sx : sx-dx)+(sy<dy ? dy-sy : sy-dy);
+}

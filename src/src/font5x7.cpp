@@ -39,14 +39,13 @@ int16_t Font5x7::CharWidth(const char c) const
     // look for rightmost set bit in glyph and add 1
     if(c>=32 && c<128)
     {
-        const int16_t cx=(c%16)*8;
-        const int16_t cy=((c/16)*10)-20;
-        //int16_t maxx=0;
-        for(int16_t dx=7; dx>=0; dx--)
+        const int16_t cx=(c%16)*7;
+        const int16_t cy=((c/16)*8)-16;
+        for(int16_t dx=6; dx>=0; dx--)
         {
-            for(int16_t dy=0; dy<10; dy++)
+            for(int16_t dy=0; dy<8; dy++)
             {
-                const int16_t bitpos=((cy+dy)*128)+(cx+dx);
+                const int16_t bitpos=((cy+dy)*112)+(cx+dx);
                 const int16_t spritebyte=bitpos/8;
                 const int16_t spritebit=bitpos%8;
                 if(spritefont5x7[spritebyte] >> (7-spritebit) & 0x01 == 1)
@@ -85,13 +84,13 @@ int16_t Font5x7::TextWidth(const char *text) const
     return w;
 }
 
-void Font5x7::PutChar(const char c, const int16_t x, const int16_t y) const
+void Font5x7::PutChar(const char c, const int16_t x, const int16_t y, const uint16_t color) const
 {
-    *DRAW_COLORS=(PALETTE_WHITE << 4);
+    *DRAW_COLORS=(color << 4);
     if(c>=32 && c<128)
     {
-        const int16_t cx=(c%16)*8;
-        const int16_t cy=((c/16)*10)-20;
-        blitSub(spritefont5x7,x,y,8,10,cx,cy,spritefont5x7Width,spritefont5x7Flags);
+        const int16_t cx=(c%16)*7;
+        const int16_t cy=((c/16)*8)-16;
+        blitSub(spritefont5x7,x,y,7,8,cx,cy,spritefont5x7Width,spritefont5x7Flags);
     }
 }

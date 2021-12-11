@@ -34,6 +34,7 @@ private:
     bool m_savegame;
     int8_t m_towndialogtype;
     uint64_t m_lastmovetick;
+    uint64_t m_lastrepeattick;
     uint64_t m_tick;
 
     enum MenuOptions
@@ -41,11 +42,12 @@ private:
         OPTION_SAVE=0,
         OPTION_JOURNAL,
         OPTION_MAP,
-        OPTION_INVENTORY,
         OPTION_REST,
-        OPTION_CHARACTER,
         OPTION_HOME,
-        OPTION_MAX
+        OPTION_MAX,
+        // move before OPTION_MAX when implemented
+        OPTION_INVENTORY,
+        OPTION_CHARACTER
     };
 
     enum CursorMode

@@ -9,6 +9,13 @@ void start()
 	PALETTE[3]=0xCFC6B8;	// off white
 
     global::SetupGlobals();
+
+    /*
+    extern void* __heap_base;
+    OutputStringStream ostr;
+    ostr << (uint64_t)((uintptr_t)&__heap_base) << " start of heap  " << (uint64_t)(65536-(uintptr_t)&__heap_base) << " available bytes";
+    trace(ostr.Buffer());
+    */
 }
 
 void update()

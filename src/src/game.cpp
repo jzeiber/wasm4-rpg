@@ -4,6 +4,8 @@
 #include "stategameoverworld.h"
 #include "stategamemap.h"
 #include "stategamequestjournal.h"
+#include "stategameover.h"
+#include "statesettings.h"
 #include "wasm4.h"
 #include "global.h"
 #include "settings.h"
@@ -37,12 +39,10 @@ Game::Game():m_state(STATE_STARTUP)
 	m_drawables[STATE_MAINMENU]=static_cast<IDrawable *>(&StateMainMenu::Instance());
 	m_inputhandlers[STATE_MAINMENU]=static_cast<IInputHandler *>(&StateMainMenu::Instance());
 
-	/*
-	m_states[STATE_GAME]=static_cast<IState *>(&StateGame::Instance());
-	m_updatables[STATE_GAME]=static_cast<IUpdatable *>(&StateGame::Instance());
-	m_drawables[STATE_GAME]=static_cast<IDrawable *>(&StateGame::Instance());
-	m_inputhandlers[STATE_GAME]=static_cast<IInputHandler *>(&StateGame::Instance());
-	*/
+	m_states[STATE_SETTINGS]=static_cast<IState *>(&StateSettings::Instance());
+	m_updatables[STATE_SETTINGS]=static_cast<IUpdatable *>(&StateSettings::Instance());
+	m_drawables[STATE_SETTINGS]=static_cast<IDrawable *>(&StateSettings::Instance());
+	m_inputhandlers[STATE_SETTINGS]=static_cast<IInputHandler *>(&StateSettings::Instance());
 
 	m_states[STATE_GAMEOVERWORLD]=static_cast<IState *>(&StateGameOverworld::Instance());
 	m_updatables[STATE_GAMEOVERWORLD]=static_cast<IUpdatable *>(&StateGameOverworld::Instance());
@@ -58,6 +58,11 @@ Game::Game():m_state(STATE_STARTUP)
 	m_updatables[STATE_GAMEQUESTJOURNAL]=static_cast<IUpdatable *>(&StateGameQuestJournal::Instance());
 	m_drawables[STATE_GAMEQUESTJOURNAL]=static_cast<IDrawable *>(&StateGameQuestJournal::Instance());
 	m_inputhandlers[STATE_GAMEQUESTJOURNAL]=static_cast<IInputHandler *>(&StateGameQuestJournal::Instance());
+
+	m_states[STATE_GAMEOVER]=static_cast<IState *>(&StateGameOver::Instance());
+	m_updatables[STATE_GAMEOVER]=static_cast<IUpdatable *>(&StateGameOver::Instance());
+	m_drawables[STATE_GAMEOVER]=static_cast<IDrawable *>(&StateGameOver::Instance());
+	m_inputhandlers[STATE_GAMEOVER]=static_cast<IInputHandler *>(&StateGameOver::Instance());
 
 }
 
@@ -168,15 +173,21 @@ void Game::ChangeState(const uint8_t newstate, void *params)
 		switch(newstate)
 		{
 		case STATE_MAINMENU:
+			if(oldstate==STATE_SETTINGS)
+			{
+				SaveData();
+			}
 			LoadData();
 			if(m_states[newstate])
 			{
 				m_states[newstate]->StateChanged(oldstate,params);
 			}
 			break;
+		case STATE_SETTINGS:
 		case STATE_GAMEOVERWORLD:
 		case STATE_GAMEMAP:
 		case STATE_GAMEQUESTJOURNAL:
+		case STATE_GAMEOVER:
 			if(m_states[newstate])
 			{
 				m_states[newstate]->StateChanged(oldstate,params);
@@ -218,7 +229,7 @@ bool Game::LoadGameData(const int8_t saveslot)
 	uint32_t bytes=diskr(buff,1024);
 	if(bytes==1024)
 	{
-		int16_t pos=12+(saveslot*500);
+		int16_t pos=24+(saveslot*500);
 		if(m_gamedata.LoadGameData(&buff[pos])==true)
 		{
 			return true;
@@ -234,7 +245,7 @@ void Game::DeleteGameData(const int8_t saveslot)
 		m_saveslotused[saveslot]=false;
 		uint8_t buff[1024];
 		diskr(buff,1024);
-		buff[12+(saveslot*500)]=0;
+		buff[242+(saveslot*500)]=0;
 		diskw(buff,1024);
 	}
 }
@@ -253,7 +264,7 @@ void Game::SaveGameData()
 
 		Settings::Instance().WriteSettings(&buff[4]);
 
-		m_gamedata.WriteGameData(&buff[12+(m_gamedata.m_saveslot*500)]);
+		m_gamedata.WriteGameData(&buff[24+(m_gamedata.m_saveslot*500)]);
 
 		diskw(buff,1024);
 	}
@@ -267,11 +278,11 @@ void Game::LoadData()
 	{
 		Settings::Instance().LoadSettings(&buff[4]);
 
-		if(m_gamedata.LoadGameData(&buff[12]))
+		if(m_gamedata.LoadGameData(&buff[24]))
 		{
 			m_saveslotused[0]=true;
 		}
-		if(m_gamedata.LoadGameData(&buff[512]))
+		if(m_gamedata.LoadGameData(&buff[524]))
 		{
 			m_saveslotused[1]=true;
 		}
