@@ -24,9 +24,9 @@ void GenerateQuest(const uint64_t seed, const uint64_t wx, const uint64_t wy, Ga
         int16_t dy=0;
         do
         {
-            dx=(r.Next()%80)-40;
-            dy=(r.Next()%80)-40;
-        }while(((dx*dx)+(dy*dy))<100);
+            dx=(r.Next()%100)-50;
+            dy=(r.Next()%100)-50;
+        }while(((dx*dx)+(dy*dy))<200);
         
         quest.m_destx=Map::Instance().WrapCoordinate(wx+(dx));
         quest.m_desty=Map::Instance().WrapCoordinate(wy+(dy));

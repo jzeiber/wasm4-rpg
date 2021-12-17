@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include "wasmmemcpy.h"
 
 #include "wasm4.h"
 
@@ -20,14 +21,4 @@ int __cxa_atexit(void (*func) (void *), void * arg, void * dso_handle)
 void __cxa_pure_virtual()
 {
 	trace("__cxa_pure_virtual()");
-}
-
-void* memset(void *s, int c, size_t len) {
-    unsigned char *dst = s;
-    while (len > 0) {
-        *dst = (unsigned char) c;
-        dst++;
-        len--;
-    }
-    return s;
 }

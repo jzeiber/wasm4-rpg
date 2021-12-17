@@ -4,6 +4,8 @@
 #include "stategameoverworld.h"
 #include "stategamemap.h"
 #include "stategamequestjournal.h"
+#include "stategamecharactersheet.h"
+#include "stategameinventory.h"
 #include "stategameover.h"
 #include "statesettings.h"
 #include "wasm4.h"
@@ -59,6 +61,16 @@ Game::Game():m_state(STATE_STARTUP)
 	m_drawables[STATE_GAMEQUESTJOURNAL]=static_cast<IDrawable *>(&StateGameQuestJournal::Instance());
 	m_inputhandlers[STATE_GAMEQUESTJOURNAL]=static_cast<IInputHandler *>(&StateGameQuestJournal::Instance());
 
+	m_states[STATE_GAMECHARACTERSHEET]=static_cast<IState *>(&StateGameCharacterSheet::Instance());
+	m_updatables[STATE_GAMECHARACTERSHEET]=static_cast<IUpdatable *>(&StateGameCharacterSheet::Instance());
+	m_drawables[STATE_GAMECHARACTERSHEET]=static_cast<IDrawable *>(&StateGameCharacterSheet::Instance());
+	m_inputhandlers[STATE_GAMECHARACTERSHEET]=static_cast<IInputHandler *>(&StateGameCharacterSheet::Instance());
+
+	m_states[STATE_GAMEINVENTORY]=static_cast<IState *>(&StateGameInventory::Instance());
+	m_updatables[STATE_GAMEINVENTORY]=static_cast<IUpdatable *>(&StateGameInventory::Instance());
+	m_drawables[STATE_GAMEINVENTORY]=static_cast<IDrawable *>(&StateGameInventory::Instance());
+	m_inputhandlers[STATE_GAMEINVENTORY]=static_cast<IInputHandler *>(&StateGameInventory::Instance());
+
 	m_states[STATE_GAMEOVER]=static_cast<IState *>(&StateGameOver::Instance());
 	m_updatables[STATE_GAMEOVER]=static_cast<IUpdatable *>(&StateGameOver::Instance());
 	m_drawables[STATE_GAMEOVER]=static_cast<IDrawable *>(&StateGameOver::Instance());
@@ -84,7 +96,6 @@ GameData &Game::GetGameData()
 
 void Game::Update(const int ticks, Game *game)
 {
-	//m_ticks+=ticks;
 	m_gamedata.m_ticks+=ticks;
 
 	// check for expired messages
@@ -187,6 +198,8 @@ void Game::ChangeState(const uint8_t newstate, void *params)
 		case STATE_GAMEOVERWORLD:
 		case STATE_GAMEMAP:
 		case STATE_GAMEQUESTJOURNAL:
+		case STATE_GAMECHARACTERSHEET:
+		case STATE_GAMEINVENTORY:
 		case STATE_GAMEOVER:
 			if(m_states[newstate])
 			{
@@ -196,7 +209,6 @@ void Game::ChangeState(const uint8_t newstate, void *params)
 		default:
 			trace("Game::ChangeState State not impelemented!");
 		}
-		// TODO - initialize state
 		m_state=newstate;
 	}
 }
@@ -245,7 +257,7 @@ void Game::DeleteGameData(const int8_t saveslot)
 		m_saveslotused[saveslot]=false;
 		uint8_t buff[1024];
 		diskr(buff,1024);
-		buff[242+(saveslot*500)]=0;
+		buff[24+(saveslot*500)]=0;
 		diskw(buff,1024);
 	}
 }

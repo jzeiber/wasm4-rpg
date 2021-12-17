@@ -56,18 +56,28 @@ void TextPrinter::Print(const char *text, const int16_t x, const int16_t y, cons
     }
 }
 
-void TextPrinter::PrintWrapped(const char *text, const int16_t x, const int16_t y, const int16_t len, const int16_t maxwidth, const uint16_t color) const
+int16_t TextPrinter::PrintWrapped(const char *text, const int16_t x, const int16_t y, const int16_t len, const int16_t maxwidth, const uint16_t color, const uint8_t justification) const
 {
+    int16_t linecount=0;
     int16_t yp=y;
     int16_t pos=0;
     int16_t wp=WrapPos(text,maxwidth);
     while(text[pos] && wp>=0)
     {
-        Print(&text[pos],x,yp,wp+1,color);
+        int16_t xpos=x;
+        switch(justification)
+        {
+        case JUSTIFY_RIGHT:
+            xpos=xpos+(maxwidth-TextWidth(&text[pos],wp+1));
+            break;
+        }
+        Print(&text[pos],xpos,yp,wp+1,color);
         pos+=(wp+1);
         yp+=LineHeight();
         wp=WrapPos(&text[pos],maxwidth);
+        linecount++;
     }
+    return linecount;
 }
 
 void TextPrinter::PrintCentered(const char *text, const int16_t cx, const int16_t y, const int16_t len, const uint16_t color) const
@@ -132,4 +142,16 @@ int16_t TextPrinter::WrapPos(const char *text, const int16_t maxwidth) const
     }
 
     return textpos-1;
+}
+
+int16_t TextPrinter::TextWidth(const char *text, const int16_t len) const
+{
+    int16_t width=0;
+    int16_t pos=0;
+    while(text[pos]!='\0' && pos<len)
+    {
+        width+=m_font->CharWidth(text[pos]);
+        pos++;
+    }
+    return width;
 }

@@ -1,5 +1,4 @@
 #include "stategamequestjournal.h"
-
 #include "stategamemap.h"
 #include "game.h"
 #include "printf.h"
@@ -11,6 +10,7 @@
 #include "generatortownname.h"
 #include "wasmmath.h"
 #include "miscfuncs.h"
+#include "lz4blitter.h"
 
 StateGameQuestJournal::StateGameQuestJournal():m_gamedata(nullptr),m_changestate(-1),m_questidx(-1)
 {
@@ -48,36 +48,6 @@ void StateGameQuestJournal::StateChanged(const uint8_t prevstate, void *params)
 
 bool StateGameQuestJournal::HandleInput(const Input *input)
 {
-    /*
-    int64_t dx=0;
-    int64_t dy=0;
-    if(input->GamepadButtonDown(1,BUTTON_RIGHT))
-    {
-        dx+=5;
-        m_gamedata->m_movedir=MOVE_RIGHT;
-    }
-    if(input->GamepadButtonDown(1,BUTTON_LEFT))
-    {
-        dx-=5;
-        m_gamedata->m_movedir=MOVE_LEFT;
-    }
-    if(input->GamepadButtonDown(1,BUTTON_UP))
-    {
-        dy-=5;
-        m_gamedata->m_movedir=MOVE_UP;
-    }
-    if(input->GamepadButtonDown(1,BUTTON_DOWN))
-    {
-        dy+=5;
-        m_gamedata->m_movedir=MOVE_DOWN;
-    }
-    if(dx!=0 || dy!=0)
-    {
-        m_x=m_gamedata->m_map.WrapCoordinate(m_x+dx);
-        m_y=m_gamedata->m_map.WrapCoordinate(m_y+dy);
-    }
-    */
-
     if(input->GamepadButtonPress(1,BUTTON_LEFT))
     {
         for(int i=m_questidx-1; i>=0; i--)
@@ -119,6 +89,7 @@ void StateGameQuestJournal::Update(const int ticks, Game *game)
 
 void StateGameQuestJournal::Draw()
 {
+    LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
     TextPrinter tp;
     tp.SetCustomFont(&Font5x7::Instance());
 
@@ -132,12 +103,14 @@ void StateGameQuestJournal::Draw()
     if(HavePreviousActiveQuest(m_questidx)==true)
     {
         *DRAW_COLORS=(PALETTE_WHITE << 4);
-        blitSub(spriteitem,2,40,16,16,(7*16),(15*16),spriteitemWidth,spriteitemFlags);
+        //blitSub(spriteitem,2,40,16,16,(7*16),(15*16),spriteitemWidth,spriteitemFlags);
+        LZ4Blitter::Instance().Blit(2,40,16,16,7,1,spriteitemFlags);
     }
     if(HaveNextActiveQuest(m_questidx)==true)
     {
         *DRAW_COLORS=(PALETTE_WHITE << 4);
-        blitSub(spriteitem,SCREEN_SIZE-(16+2),40,16,16,(5*16),(15*16),spriteitemWidth,spriteitemFlags);
+        //blitSub(spriteitem,SCREEN_SIZE-(16+2),40,16,16,(5*16),(15*16),spriteitemWidth,spriteitemFlags);
+        LZ4Blitter::Instance().Blit(SCREEN_SIZE-(16+2),40,16,16,5,1,spriteitemFlags);
     }
     if(HavePreviousActiveQuest(m_questidx)==false && HaveNextActiveQuest(m_questidx)==false && (m_questidx<0 || m_questidx>=MAX_QUESTS || m_gamedata->m_quests[m_questidx].GetActive()==false))
     {
@@ -146,92 +119,21 @@ void StateGameQuestJournal::Draw()
     
     if(m_questidx>=0 && m_questidx<MAX_QUESTS && m_gamedata->m_quests[m_questidx].GetActive()==true)
     {
-        /*
-        const int64_t qx=m_gamedata->m_quests[m_questidx].m_sourcex;
-        const int64_t qy=m_gamedata->m_quests[m_questidx].m_sourcey;
-        char temp[32];
-        if(m_gamedata->m_quests[m_questidx].HasSourceLocation()==true)
-        {
-            GenerateTownName((qx << 32) | qy,temp,31);
-            tp.PrintWrapped(temp,1,60,128,SCREEN_SIZE-2);
-        }
-
-        // flip source and dest y because +y is down on map, but tan expects +y to be up
-        const float destang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_quests[m_questidx].m_desty,m_gamedata->m_quests[m_questidx].m_destx,m_gamedata->m_playerworldy);
-        const float destdistsq=m_gamedata->m_map.ComputeDistanceSq(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_quests[m_questidx].m_destx,m_gamedata->m_quests[m_questidx].m_desty);
-
-        const float mpi8=M_PI_4/2;
-        if(destang!=destang)
-        {
-            snprintf(temp,31,"Here");
-        }
-        else if(destang>=mpi8 && destang<M_PI_4+mpi8)
-        {
-            snprintf(temp,31,"Northeast");
-        }
-        else if(destang>=M_PI_4+mpi8 && destang<M_PI_2+mpi8)
-        {
-            snprintf(temp,31,"North");
-        }
-        else if(destang>=M_PI_2+mpi8 && destang<M_PI_2+M_PI_4+mpi8)
-        {
-            snprintf(temp,31,"Northwest");
-        }
-        else if(destang>=M_PI_2+M_PI_4+mpi8 && destang<M_PI+mpi8)
-        {
-            snprintf(temp,31,"West");
-        }
-        else if(destang>=M_PI+mpi8 && destang<M_PI+M_PI_4+mpi8)
-        {
-            snprintf(temp,31,"Southwest");
-        }
-        else if(destang>=M_PI+M_PI_4+mpi8 && destang<M_PI+M_PI_2+mpi8)
-        {
-            snprintf(temp,31,"South");
-        }
-        else if(destang>=M_PI+M_PI_2+mpi8 && destang<M_PI+M_PI_2+M_PI_4+mpi8)
-        {
-            snprintf(temp,31,"Southeast");
-        }
-        else
-        {
-            snprintf(temp,31,"East");
-        }
-
-        snprintf(global::buff,global::buffsize,"Direction %s",temp);
-        tp.PrintWrapped(global::buff,1,70,128,SCREEN_SIZE-2);
-
-        if(destdistsq<(10*10))
-        {
-            snprintf(temp,31,"Very Close");
-        }
-        else if(destdistsq<(50*50))
-        {
-            snprintf(temp,31,"Close");
-        }
-        else if(destdistsq<(500*200))
-        {
-            snprintf(temp,31,"Middling");
-        }
-        else if(destdistsq<(1000*1000))
-        {
-            snprintf(temp,31,"Somewhat Far");
-        }
-        else if(destdistsq<(2000*2000))
-        {
-            snprintf(temp,31,"Far");
-        }
-        else
-        {
-            snprintf(temp,31,"Very Far");
-        }
-        snprintf(global::buff,global::buffsize,"Distance %s",temp);
-        tp.PrintWrapped(global::buff,1,80,128,SCREEN_SIZE-2);
-        */
-
         m_gamedata->m_quests[m_questidx].GetDescription(global::buff,global::buffsize);
-        tp.PrintWrapped(global::buff,1,60,global::buffsize,SCREEN_SIZE-2,PALETTE_WHITE);
-        
+        int16_t linecount=tp.PrintWrapped(global::buff,1,60,global::buffsize,SCREEN_SIZE-2,PALETTE_WHITE);
+        int16_t ypos=60+(linecount*10);
+
+        if(m_gamedata->m_quests[m_questidx].GetTargetLocationDirection(global::buff,global::buffsize,m_gamedata,m_gamedata->m_playerworldx,m_gamedata->m_playerworldy)==true)
+        {
+            tp.Print(global::buff,1,ypos,128,PALETTE_WHITE);
+            ypos+=10;
+        }
+        if(m_gamedata->m_quests[m_questidx].GetTargetLocationDistance(global::buff,global::buffsize,m_gamedata,m_gamedata->m_playerworldx,m_gamedata->m_playerworldy)==true)
+        {
+            tp.Print(global::buff,1,ypos,128,PALETTE_WHITE);
+            ypos+=10;
+        }
+
     }
 
 }

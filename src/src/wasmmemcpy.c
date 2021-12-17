@@ -1,6 +1,6 @@
 #include "wasmmemcpy.h"
 
-void *memcpy(void *dest, void *src, size_t n)
+void *memcpy(void *dest, const void *src, size_t n)
 {
 	char *csrc=(char *)src;
 	char *cdest=(char *)dest;

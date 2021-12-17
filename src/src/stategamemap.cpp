@@ -4,6 +4,7 @@
 #include "global.h"
 #include "wasm4.h"
 #include "spriteitem.h"
+#include "lz4blitter.h"
 
 StateGameMap::StateGameMap():m_gamedata(nullptr),m_changestate(-1),m_x(0),m_y(0)
 {
@@ -80,6 +81,7 @@ void StateGameMap::Update(const int ticks, Game *game)
 
 void StateGameMap::Draw()
 {
+    LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
     int16_t dq[MAX_QUESTS][2];
     for(int i=0; i<MAX_QUESTS; i++)
     {
@@ -123,7 +125,8 @@ void StateGameMap::Draw()
         if(dq[i][0]>-1 && dq[i][1]>-1)
         {
             *DRAW_COLORS=(PALETTE_WHITE << 4);
-            blitSub(spriteitem,dq[i][0]-8,dq[i][1]-8,16,16,(3*16),(12*16),spriteitemWidth,spriteitemFlags);
+            //blitSub(spriteitem,dq[i][0]-8,dq[i][1]-8,16,16,(3*16),(12*16),spriteitemWidth,spriteitemFlags);
+            LZ4Blitter::Instance().Blit(dq[i][0]-8,dq[i][1]-8,16,16,3,12,spriteitemFlags);
         }
     }
 

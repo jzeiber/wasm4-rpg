@@ -6,6 +6,7 @@
 #include "spriteitem.h"
 #include "font5x7.h"
 #include "textprinter.h"
+#include "lz4blitter.h"
 
 StateMainMenu::StateMainMenu():m_changestate(0),m_selectedslot(0),m_selectedsubslot(0),m_showdialog(false),m_game(nullptr)
 {
@@ -173,6 +174,8 @@ void StateMainMenu::Draw()
         *DRAW_COLORS=(PALETTE_WHITE << 4);
         int16_t ax=20;
         int16_t ay=60+(m_selectedslot*30);
-        blitSub(spriteitem,ax,ay,16,16,(5*16),(15*16),spriteitemWidth,spriteitemFlags);
+        //blitSub(spriteitem,ax,ay,16,16,(5*16),(15*16),spriteitemWidth,spriteitemFlags);
+        LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
+        LZ4Blitter::Instance().Blit(ax,ay,16,16,5,1,spriteitemFlags);
     }
 }

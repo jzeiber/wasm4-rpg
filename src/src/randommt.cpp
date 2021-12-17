@@ -46,3 +46,8 @@ double RandomMT::NextDouble()
 {
 	return tinymt64_generate_double(&m_state);
 }
+
+double RandomMT::NextGaussianDouble()
+{
+	return (tinymt64_generate_double(&m_state)+tinymt64_generate_double(&m_state)+tinymt64_generate_double(&m_state)+tinymt64_generate_double(&m_state))/4.0;
+}

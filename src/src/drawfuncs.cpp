@@ -1,6 +1,7 @@
 #include "drawfuncs.h"
 #include "wasm4.h"
 
+/*
 // calacultes x,y on the sprite sheet based on rotations/flip flags
 void getspritesheetcoords(const int32_t spritex, const int32_t spritey, const int16_t spritewidth, const int16_t spriteheight, const uint32_t flags, int32_t &sheetx, int32_t &sheety)
 {
@@ -62,6 +63,7 @@ void blitOutlined(const uint8_t *spritesheet, const uint16_t sheetwidth, const u
     blitSub(spritesheet,screenx,screeny,16,16,sheetx*16,sheety*16,sheetwidth,flags);
 
 }
+*/
 
 void blitMasked(const uint8_t *spritesheet, const uint16_t sheetwidth, const uint8_t sheetx, const uint8_t sheety, const int16_t screenx, const int16_t screeny, const uint16_t forecolor, const uint16_t backcolor, const uint32_t flags)
 {

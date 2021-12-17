@@ -6,6 +6,7 @@
 #include "outputstringstream.h"
 #include "miscfuncs.h"
 #include "generatortownname.h"
+#include "wasmmath.h"
 
 QuestData::QuestData()
 {
@@ -218,81 +219,193 @@ bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEvent
 
 void QuestData::GetQuestGiverDescription(char *desc, const int16_t len)
 {
-    OutputStringStream ostr;
-
-    //snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
-
-    if(HasSourceLocation()==true)
+    if(desc)
     {
-        char town[32];
-        town[31]='\0';
-        GenerateTownName(((static_cast<uint64_t>(m_sourcex) << 32) | static_cast<uint64_t>(m_sourcey)),town,31);
-        ostr << "The villagers in " << town << " have need of your services.\n\n";
-    }
+        OutputStringStream ostr;
 
-    switch(m_type)
-    {
-    case TYPE_TRAVELLOCATION:
-        ostr << "Travel to a nearby location marked on your map.";
-        break;
-    case TYPE_TRAVELAREA:
-        ostr << "Travel close to the location marked on your map.";
-        break;
-    default:
-        ostr << "????";
-    }
+        //snprintf(global::buff,global::buffsize,"The town of %s is being harassed by monsters.\n\nThey need you to clear the surrounding area.\n\nDo you accept the quest?",town);
 
-    strncpy(desc,ostr.Buffer(),len-1);
+        if(HasSourceLocation()==true)
+        {
+            char town[32];
+            town[31]='\0';
+            GenerateTownName(((static_cast<uint64_t>(m_sourcex) << 32) | static_cast<uint64_t>(m_sourcey)),town,31);
+            ostr << "The villagers in " << town << " have need of your services.\n\n";
+        }
+
+        switch(m_type)
+        {
+        case TYPE_TRAVELLOCATION:
+            ostr << "Travel to a nearby location marked on your map.";
+            break;
+        case TYPE_TRAVELAREA:
+            ostr << "Travel close to the location marked on your map.";
+            break;
+        default:
+            ostr << "????";
+        }
+
+        strncpy(desc,ostr.Buffer(),len-1);
+        desc[len-1]='\0';
+    }
 }
 
 void QuestData::GetDescription(char *desc, const int16_t len)
 {
-    OutputStringStream ostr;
-    ostr << "Type : ";
-    switch(m_type)
+    if(desc)
     {
-    case TYPE_TRAVELAREA:
-    case TYPE_TRAVELLOCATION:
-    case TYPE_TRAVELDISTANCE:
-        ostr << "Travel\n";
-        break;
-    case TYPE_DELIVERY:
-        ostr << "Delivery\n";
-        break;
-    case TYPE_KILLAREAMONSTERS:
-        ostr << "Clear Area\n";
-        break;
-    case TYPE_VISITANYTOWN:
-        ostr << "Visit Town\n";
-        break;
-    case TYPE_ACCEPTQUESTS:
-        ostr << "General\n";
-        break;
-    default:
-        ostr << "????";
+        OutputStringStream ostr;
+        ostr << "Type : ";
+        switch(m_type)
+        {
+        case TYPE_TRAVELAREA:
+        case TYPE_TRAVELLOCATION:
+        case TYPE_TRAVELDISTANCE:
+            ostr << "Travel\n";
+            break;
+        case TYPE_DELIVERY:
+            ostr << "Delivery\n";
+            break;
+        case TYPE_KILLAREAMONSTERS:
+            ostr << "Clear Area\n";
+            break;
+        case TYPE_VISITANYTOWN:
+            ostr << "Visit Town\n";
+            break;
+        case TYPE_ACCEPTQUESTS:
+            ostr << "General\n";
+            break;
+        default:
+            ostr << "????";
+        }
+        switch(m_type)
+        {
+        case TYPE_TRAVELAREA:
+            ostr << "Go to the area marked on your map.\n";
+            break;
+        case TYPE_TRAVELLOCATION:
+            ostr << "Go to the location marked on your map.\n";
+            ostr << m_destx << "," << m_desty << "\n";
+            break;
+        case TYPE_TRAVELDISTANCE:
+            ostr << "Move " << static_cast<int32_t>(m_data[0]) << " spaces in any direction\n";
+            ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+            break;
+        case TYPE_VISITANYTOWN:
+            ostr << "Visit any town.\n";
+            break;
+        case TYPE_ACCEPTQUESTS:
+            ostr << "Accept " << static_cast<int32_t>(m_data[0]) << " quest" << (m_data[0]==1 ? "" : "s") << "\n";
+            ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+            break;
+        default:
+            ostr << "????";
+        }
+        strncpy(desc,ostr.Buffer(),len-1);
+        desc[len-1]='\0';
     }
-    switch(m_type)
+}
+
+bool QuestData::GetTargetLocationDistance(char *dist, const int16_t len, GameData *gamedata, const int64_t sourcex, const int64_t sourcey)
+{
+    if(dist && HasTargetLocation())
     {
-    case TYPE_TRAVELAREA:
-        ostr << "Go to the area marked on your map.\n";
-        break;
-    case TYPE_TRAVELLOCATION:
-        ostr << "Go to the location marked on your map.\n";
-        ostr << m_destx << "," << m_desty << "\n";
-        break;
-    case TYPE_TRAVELDISTANCE:
-        ostr << "Move " << static_cast<int32_t>(m_data[0]) << " spaces in any direction\n";
-        ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
-        break;
-    case TYPE_VISITANYTOWN:
-        ostr << "Visit any town.\n";
-        break;
-    case TYPE_ACCEPTQUESTS:
-        ostr << "Accept " << static_cast<int32_t>(m_data[0]) << " quest" << (m_data[0]==1 ? "" : "s") << "\n";
-        ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
-        break;
-    default:
-        ostr << "????";
+        const float destdistsq=gamedata->m_map.ComputeDistanceSq(sourcex,sourcey,GetCurrentTargetWorldX(),GetCurrentTargetWorldY());
+        OutputStringStream ostr;
+
+        ostr << "Distance ";
+
+        if(destdistsq<(10*10))
+        {
+            ostr << "Very Close";
+        }
+        else if(destdistsq<(50*50))
+        {
+            ostr << "Close";
+        }
+        else if(destdistsq<(500*200))
+        {
+            ostr << "Middling";
+        }
+        else if(destdistsq<(1000*1000))
+        {
+            ostr << "Somewhat Far";
+        }
+        else if(destdistsq<(2000*2000))
+        {
+            ostr << "Far";
+        }
+        else
+        {
+            ostr << "Very Far";
+        }
+
+        strncpy(dist,ostr.Buffer(),len-1);
+        dist[len-1]='\0';
+
+        return true;
     }
-    strncpy(desc,ostr.Buffer(),len-1);
+    else
+    {
+        return false;
+    }
+}
+
+bool QuestData::GetTargetLocationDirection(char *direction, const int16_t len, GameData *gamedata, const int64_t sourcex, const int64_t sourcey)
+{
+    if(direction && HasTargetLocation())
+    {
+        // flip source and dest y because +y is down on map, but tan expects +y to be up
+        const float destang=gamedata->m_map.ComputeAngle(sourcex,GetCurrentTargetWorldY(),GetCurrentTargetWorldX(),sourcey);
+        OutputStringStream ostr;
+
+        ostr << "Direction ";
+
+        const float mpi8=M_PI_4/2;
+        if(destang!=destang)
+        {
+            ostr << "Here";
+        }
+        else if(destang>=mpi8 && destang<M_PI_4+mpi8)
+        {
+            ostr << "Northeast";
+        }
+        else if(destang>=M_PI_4+mpi8 && destang<M_PI_2+mpi8)
+        {
+            ostr << "North";
+        }
+        else if(destang>=M_PI_2+mpi8 && destang<M_PI_2+M_PI_4+mpi8)
+        {
+            ostr << "Northwest";
+        }
+        else if(destang>=M_PI_2+M_PI_4+mpi8 && destang<M_PI+mpi8)
+        {
+            ostr << "West";
+        }
+        else if(destang>=M_PI+mpi8 && destang<M_PI+M_PI_4+mpi8)
+        {
+            ostr << "Southwest";
+        }
+        else if(destang>=M_PI+M_PI_4+mpi8 && destang<M_PI+M_PI_2+mpi8)
+        {
+            ostr << "South";
+        }
+        else if(destang>=M_PI+M_PI_2+mpi8 && destang<M_PI+M_PI_2+M_PI_4+mpi8)
+        {
+            ostr << "Southeast";
+        }
+        else
+        {
+            ostr << "East";
+        }
+
+        strncpy(direction,ostr.Buffer(),len-1);
+        direction[len-1]='\0';
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }

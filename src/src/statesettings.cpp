@@ -5,6 +5,7 @@
 #include "game.h"
 #include "spriteitem.h"
 #include "settings.h"
+#include "lz4blitter.h"
 
 StateSettings::StateSettings():m_changestate(0),m_selected(0)
 {
@@ -107,6 +108,7 @@ bool StateSettings::HandleInput(const Input *input)
 
 void StateSettings::Draw()
 {
+    LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
     TextPrinter tp;
     tp.SetCustomFont(&Font5x7::Instance());
 
@@ -136,17 +138,21 @@ void StateSettings::Draw()
 void StateSettings::DrawSlider(const int16_t x, const int16_t y, const int16_t min, const int16_t max, const int16_t val, const bool selected)
 {
     *DRAW_COLORS=(selected==false ? PALETTE_WHITE << 4 : PALETTE_GREEN << 4);
-    blitSub(spriteitem,x,y,16,16,4*16,12*16,spriteitemWidth,spriteitemFlags);
-    blitSub(spriteitem,x+112,y,16,16,4*16,12*16,spriteitemWidth,spriteitemFlags|BLIT_FLIP_X);
+    //blitSub(spriteitem,x,y,16,16,4*16,12*16,spriteitemWidth,spriteitemFlags);
+    //blitSub(spriteitem,x+112,y,16,16,4*16,12*16,spriteitemWidth,spriteitemFlags|BLIT_FLIP_X);
+    LZ4Blitter::Instance().Blit(x,y,16,16,4,12,spriteitemFlags);
+    LZ4Blitter::Instance().Blit(x+112,y,16,16,4,12,spriteitemFlags|BLIT_FLIP_X);
 
     for(int16_t segment=1; segment<7; segment++)
     {
-        blitSub(spriteitem,x+(16*segment),y,16,16,5*16,12*16,spriteitemWidth,spriteitemFlags);
+        //blitSub(spriteitem,x+(16*segment),y,16,16,5*16,12*16,spriteitemWidth,spriteitemFlags);
+        LZ4Blitter::Instance().Blit(x+(16*segment),y,16,16,5,12,spriteitemFlags);
     }
 
     // slider range = 104 pixels (128-16)-(4+4)
     const float p=static_cast<float>(val-min)/static_cast<float>(max-min);
     *DRAW_COLORS=*DRAW_COLORS | PALETTE_BROWN;
-    blitSub(spriteitem,x+4+(104.0f*p),y,16,16,6*16,12*16,spriteitemWidth,spriteitemFlags);
+    //blitSub(spriteitem,x+4+(104.0f*p),y,16,16,6*16,12*16,spriteitemWidth,spriteitemFlags);
+    LZ4Blitter::Instance().Blit(x+4+(104.0*p),y,16,16,6,12,spriteitemFlags);
 
 }

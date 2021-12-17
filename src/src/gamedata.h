@@ -6,6 +6,7 @@
 #include "map.h"
 #include "questdata.h"
 #include "mob.h"
+#include "itemdata.h"
 #include "gameevent.h"
 
 #define MOVE_NONE	0
@@ -18,6 +19,8 @@
 #define MAX_GAMEMESSAGE     4
 #define MAX_MOBS            20
 #define MAX_QUEUE_EVENTS    5
+#define MAX_INVENTORY       20
+#define MAX_GROUNDITEMS     5
 
 class GameData
 {
@@ -62,9 +65,23 @@ public:
     bool WorldLocationWater(const int64_t worldx, const int64_t worldy) const;
 
     int16_t GetPlayerMeleeAttack() const;
+    int16_t GetPlayerMeleeAttack(const uint8_t itemtype) const;
+    int16_t GetEquippedMeleeAttack(const uint8_t equipslot) const;
+    int16_t GetPlayerArmor() const;
+    int16_t GetPlayerArmor(const uint8_t itemtype) const;
+    int16_t GetEquippedArmor(const uint8_t equipslot) const;
+
+    void AddPlayerExperience(const int32_t exp);
+
     bool HostileWithinArea(const int64_t tlx, const int64_t tly, const int64_t brx, const int64_t bry); // returns true if hostile mob within area - coords should be unwrapped (tl must always be less or equal to br)
 
+    int8_t GetNextUnusedInventorySlot() const;   // return <0 if no slots available
+    void ToggleInventoryEquipped(uint8_t idx);
+    int8_t ClearAndGetGroundSlot(); // gets next available ground slot, if none available, clears out most distant slot and returns it
+
     void RecycleMobs(); // remove distant mobs and add close ones if needed
+    bool CreateCloseMob(const int64_t x, const int64_t y, const int16_t mindist, const int16_t maxdist, const bool aggressive);
+    void RecycleGroundItems();  // remove items on ground too far away
 
     Map &m_map;
     uint64_t m_ticks;
@@ -82,11 +99,15 @@ public:
     uint32_t m_questscompleted;
     QuestData m_quests[MAX_QUESTS];     // 5 quests at 25 bytes each = 125 bytes
     Mob m_mobs[MAX_MOBS];               // 20 mobs at 18 bytes each = 360 bytes
+    ItemData m_inventory[MAX_INVENTORY];    // 20 items at 6 bytes each = 120 bytes
+    ItemData m_grounditem[MAX_GROUNDITEMS];
+    int32_t m_grounditemlocation[MAX_GROUNDITEMS][2];   // when we save gound item loc - only use 1 byte each for x,y, which will be x,y offset from current player location
     int16_t m_queuedevent[MAX_QUEUE_EVENTS];
     GameEventParam m_queuedeventparam[MAX_QUEUE_EVENTS];
 
 private:
 
     void SortClosestMobs(const int32_t x, const int32_t y);  // sorts m_mobs so closest to location are first
+    bool PlaceMob(const int16_t mobidx, const int64_t x, const int64_t y, const int16_t mindist, const int16_t maxdist);
 
 };

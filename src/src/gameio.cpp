@@ -13,6 +13,16 @@ void write_uint8_t(uint8_t *data, uint8_t val)
     data[0]=val;
 }
 
+int8_t read_int8_t(const uint8_t *data)
+{
+    return (int8_t)data[0];
+}
+
+void write_int8_t(uint8_t *data, int8_t val)
+{
+    data[0]=(uint8_t)val;
+}
+
 uint16_t read_uint16_t(const uint8_t *data)
 {
     uint16_t val=0;

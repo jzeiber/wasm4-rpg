@@ -9,6 +9,9 @@ enum GameEvent
     EVENT_NONE=0,
     EVENT_PLAYERMOVE,
     EVENT_PLAYERATTACK,
+    EVENT_PLAYERLEVELUP,
+    EVENT_PLAYERPICKUP,
+    EVENT_KILLMOB,
     EVENT_ARRIVETOWN,
     EVENT_ACCEPTQUEST,
     EVENT_DECLINEQUEST,
@@ -22,7 +25,7 @@ struct GameEventParam
 
     union
     {
-        ptrdiff_t *m_target;
+        uintptr_t *m_target;
         Mob *m_targetmob;
     };
     union

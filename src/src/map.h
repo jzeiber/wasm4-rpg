@@ -28,6 +28,7 @@ public:
 	// GetColor
 	
 	uint64_t WrapCoordinate(int64_t coordinate) const;
+	int64_t DeltaCoordinate(int64_t sourcecoord, int64_t destcoord) const;	// get -/+ delta from source coordinate to destination coordinate (i.e. relative position)
 	
 	uint8_t GetTerrainType(const uint64_t worldx, const uint64_t worldy, const bool usecached) const;	// land or water
 

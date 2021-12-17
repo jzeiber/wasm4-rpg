@@ -56,6 +56,8 @@ public:
 
     void GetQuestGiverDescription(char *desc, const int16_t len);
     void GetDescription(char *desc, const int16_t len);
+    bool GetTargetLocationDistance(char *dist, const int16_t len, GameData *gamedata, const int64_t sourcex, const int64_t sourcey);
+    bool GetTargetLocationDirection(char *direction, const int16_t len, GameData *gamedata, const int64_t sourcex, const int64_t sourcey);
 
     static constexpr int16_t SaveDataLength() { return 25; }
 

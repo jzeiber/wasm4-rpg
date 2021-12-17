@@ -43,11 +43,11 @@ private:
         OPTION_JOURNAL,
         OPTION_MAP,
         OPTION_REST,
+        OPTION_CHARACTER,
+        OPTION_INVENTORY,
+        OPTION_PICKUP,
         OPTION_HOME,
         OPTION_MAX,
-        // move before OPTION_MAX when implemented
-        OPTION_INVENTORY,
-        OPTION_CHARACTER
     };
 
     enum CursorMode
@@ -61,6 +61,7 @@ private:
     void DrawMenuBar();
     void DrawHealthBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
     void DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
+    void DrawExpBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
     void DrawMobHealth(const int16_t x, const int16_t y, const int16_t health, const int16_t maxhealth);
     void GetMenuSpriteSheetPos(const int16_t option, int16_t &x, int16_t &y);
 

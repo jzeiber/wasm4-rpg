@@ -16,6 +16,7 @@ public:
 	void Seed(const uint64_t seed);
 	uint64_t Next();
 	double NextDouble();
+	double NextGaussianDouble();
 	
 private:
 	tinymt64_t m_state;

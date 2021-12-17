@@ -191,9 +191,48 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
     {
         if(m_health<param.m_int16[0])
         {
-            SetActive(false); 
+            RandomMT rand;
+            rand.Seed(static_cast<uint64_t>(m_x) << 32 | static_cast<uint64_t>(m_y));
+            GameEventParam p;
+            p.m_int16[0]=m_level;
+            p.m_int16[1]=m_type;
+            SetActive(false);
             gamedata->AddGameMessage("Killed Mob");
-            // - TODO queue game event - add quest index if set in param
+
+            int32_t exp=Game::Instance().GetMinExperienceGain(m_level)+(Game::Instance().GetMaxExperienceGain(m_level)*rand.NextGaussianDouble()*(static_cast<double>(m_mobdata[m_type].expmult)/64.0));
+            gamedata->AddPlayerExperience(exp);
+
+            // TODO queue game event - add quest index if set in param
+            gamedata->QueueGameEvent(EVENT_KILLMOB,p);
+
+            // TODO - chance of drop item
+            if(m_mobdata[m_type].dropflags!=0 && rand.NextDouble()<(static_cast<double>(m_mobdata[m_type].dropprobability)/255.0))
+            //if(m_mobdata[m_type].dropflags!=0)
+            {
+                uint8_t itemtype=ItemData::TYPE_NONE;
+                uint8_t equipslot=ItemData::EQUIP_NONE;
+                
+                // randomly find a drop type that the mob supports
+                int bitcheck=rand.Next()%8;
+                while(((1 << bitcheck) & m_mobdata[m_type].dropflags)==0)
+                {
+                    bitcheck=rand.Next()%8;
+                }
+
+                itemtype=RandomItemTypeFromDropType(rand,(1 << bitcheck));
+                equipslot=ItemData::EQUIP_ANY;
+
+                ItemData item;
+                if(item.CreateRandom(rand,itemtype,equipslot,m_level))
+                {
+                    const int8_t groundidx=gamedata->ClearAndGetGroundSlot();
+
+                    gamedata->m_grounditem[groundidx]=item;
+                    gamedata->m_grounditem[groundidx].SetActive(true);
+                    gamedata->m_grounditemlocation[groundidx][0]=m_x;
+                    gamedata->m_grounditemlocation[groundidx][1]=m_y;
+                }
+            }
         }
         else
         {
@@ -202,7 +241,7 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
             gamedata->AddGameMessage("Attacked Mob");
         }
     }
-    if(eventtype==EVENT_PLAYERATTACK || eventtype==EVENT_PLAYERMOVE)
+    if(GetActive()==true && eventtype==EVENT_PLAYERATTACK || eventtype==EVENT_PLAYERMOVE || eventtype==EVENT_PLAYERPICKUP)
     {
         trymove=true;
     }
@@ -261,11 +300,12 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
                 }
             }
         }
-        // TODO attack player
+        // attack player
         else if(GetHostile()==true && xdist<=1 && ydist<=1)
         {
-            // TODO - calculate damage done
-            int16_t damage=1;
+            // calculate damage done
+            int16_t damage=_max(1,m_level*(static_cast<double>(m_mobdata[m_type].attackmult)/32.0));
+            damage=_max(1,damage-gamedata->GetPlayerArmor());
             if(gamedata->m_playerhealth >= damage)
             {
                 gamedata->m_playerhealth-=damage;
@@ -280,11 +320,11 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
     return true;
 }
 
-void Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t terraintype)
+bool Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t terraintype)
 {
     SetActive(true);
-    // TODO - change distribution of level
-    m_level=_max(1,playerlevel+(rand.Next()%3)-1);
+    // distribution of level
+    m_level=_max(1,playerlevel+((rand.NextGaussianDouble()-0.5)*6.0)+0.5);
     
     //set random type for terrain
     {
@@ -299,6 +339,10 @@ void Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t 
             {
                 total+=m_mobdata[i].probability;
             }
+        }
+        if(total==0)
+        {
+            return false;
         }
         int32_t val=rand.Next()%total;
         int32_t current=0;
@@ -322,6 +366,8 @@ void Mob::CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t 
     // multiply health by factor for type
     m_health=GetMaxHealth();
     m_flags=m_mobdata[m_type].flags;
+
+    return true;
 }
 
 uint8_t Mob::GetType() const
@@ -362,4 +408,81 @@ int16_t Mob::GetMaxHealth() const
         return _max(1,static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0));
     }
     return 0;
+}
+
+uint8_t Mob::GetDropFlags() const
+{
+    if(m_type>=0 && m_type<MobType::TYPE_MAX)
+    {
+        return m_mobdata[m_type].dropflags;
+    }
+    return 0;
+}
+
+uint8_t Mob::RandomItemTypeFromDropType(RandomMT &rand, uint8_t droptype) const
+{
+    uint8_t itemtype=0;
+    uint8_t typecount=0;
+    bool types[ItemData::TYPE_MAX];
+    for(int i=0; i<ItemData::TYPE_MAX; i++)
+    {
+        types[i]=false;
+    }
+    if((droptype & DROP_WEAPON)==DROP_WEAPON)
+    {
+        types[ItemData::TYPE_MELEEWEAPON]=true;
+        //types[ItemData::TYPE_PROJECTILEWEAPON]=true;
+        typecount+=1;
+    } 
+    if((droptype & DROP_ARMOR)==DROP_ARMOR)
+    {
+        types[ItemData::TYPE_SHIELD]=true;
+        types[ItemData::TYPE_HELMET]=true;
+        types[ItemData::TYPE_BODYARMOR]=true;
+        types[ItemData::TYPE_GAUNTLET]=true;
+        //types[ItemData::TYPE_LEGARMOR]=true;
+        types[ItemData::TYPE_BOOT]=true;
+        typecount+=5;
+    }
+    if((droptype & DROP_RING)==DROP_RING)
+    {
+        trace("not impelemented");
+        //types[ItemData::TYPE_RING]=true;
+        //typecount+=1;
+    }
+    if((droptype & DROP_AMULET)==DROP_AMULET)
+    {
+        trace("not impelemented");
+        //types[ItemData::TYPE_AMULET]=true;
+        //typecount+=1;
+    }
+    if((droptype & DROP_POTION)==DROP_POTION)
+    {
+        trace("not impelemented");
+        // potions not implemented yet
+        //types[ItemData::TYPE_MANAPOTION]=true;
+        //types[ItemData::TYPE_HEALTHPOTION]=true;
+        //types[ItemData::TYPE_EXPPOTION]=true;
+        //typecount+=3;
+    }
+
+    if(typecount>0)
+    {
+        int r=rand.Next()%typecount;
+        uint8_t count=0;
+        for(int i=0; i<ItemData::TYPE_MAX; i++)
+        {
+            if(types[i]==true)
+            {
+                count++;
+                if(count>r)
+                {
+                    itemtype=i;
+                    break;
+                }
+            }
+        }
+    }
+
+    return itemtype;
 }
