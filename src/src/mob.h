@@ -4,6 +4,7 @@
 #include "igameeventhandler.h"
 #include "iupdatable.h"
 #include "randommt.h"
+#include "itemdata.h"
 
 class Game;
 
@@ -20,16 +21,6 @@ public:
         FLAG_AGGRESSIVE = 0b00000100,
         FLAG_TRAVELWATER= 0b00001000,
         FLAG_TRAVELLAND = 0b00010000
-    };
-
-    enum DropFlags
-    {
-        DROP_NONE       = 0b00000000,
-        DROP_WEAPON     = 0b00000001,
-        DROP_ARMOR      = 0b00000010,
-        DROP_AMULET     = 0b00000100,
-        DROP_RING       = 0b00001000,
-        DROP_POTION     = 0b00010000
     };
 
     enum MobType
@@ -80,13 +71,15 @@ public:
     void SetQuestIndex(const int8_t questidx);  // set if monster is tied to quest
     int8_t GetQuestIndex() const;               // get if monster is tied to quest
 
+    int16_t GetAttack() const;
     int16_t GetMaxHealth() const;
+    int16_t GetArmor() const;
 
     uint8_t GetDropFlags() const;
 
     virtual void Update(const int ticks, Game *game);
 
-    virtual bool HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param);
+    virtual bool HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param, const int8_t idx);
 
     virtual bool CreateRandom(RandomMT &rand, const int16_t playerlevel, const uint8_t terraintype);
 
@@ -116,25 +109,23 @@ protected:
     };
 
     static constexpr struct MobData m_mobdata[]={
-                            /*x,  y,prob, flags                             ,hlth,attk, drop flags                       ,dprb, exp*/
-    /* TYPE_BEAST1       */ { 1,  2, 128, FLAG_TRAVELLAND                   ,  96,  96, DROP_WEAPON|DROP_ARMOR           ,  60, 64},
-    /* TYPE_BEAST2       */ { 2,  2, 128, FLAG_TRAVELLAND                   ,  96,  96, DROP_WEAPON|DROP_ARMOR           ,  60, 64},
-    /* TYPE_BEAST3       */ { 3,  2, 128, FLAG_TRAVELLAND                   ,  96,  96, DROP_WEAPON|DROP_ARMOR           ,  60, 64},
-    /* TYPE_BEAST4       */ { 4,  2, 128, FLAG_TRAVELLAND                   , 128,  96, DROP_WEAPON|DROP_ARMOR           ,  60, 64},
-    /* TYPE_SCORPION     */ { 8,  4, 128, FLAG_TRAVELLAND                   ,  64,  64, DROP_NONE                        ,  60, 32},
-    /* TYPE_CRAB         */ { 9,  4, 128, FLAG_TRAVELLAND | FLAG_TRAVELWATER,  64,  64, DROP_NONE                        ,  60, 32},
-    /* TYPE_SEASERPENT1  */ { 4,  8, 128, FLAG_TRAVELWATER                  ,  96,  96, DROP_NONE                        ,  60, 64},
-    /* TYPE_SEASERPENT2  */ { 5,  8, 128, FLAG_TRAVELWATER                  ,  96,  96, DROP_NONE                        ,  60, 64},
-    /* TYPE_KRAKEN       */ { 1,  8,  64, FLAG_TRAVELWATER                  , 192, 192, DROP_NONE                        ,  60, 96},
-    /* TYPE_SPIDER1      */ {12,  4, 128, FLAG_TRAVELLAND                   ,  96,  48, DROP_NONE                        ,  60, 64},
-    /* TYPE_SPIDER2      */ {13,  4, 128, FLAG_TRAVELLAND                   ,  96,  48, DROP_NONE                        ,  60, 64},
-    /* TYPE_SPIDER3      */ {14,  4, 128, FLAG_TRAVELLAND                   ,  96,  48, DROP_NONE                        ,  60, 64},
-    /* TYPE_IMP          */ {15,  4,  64, FLAG_TRAVELLAND                   , 192, 192, DROP_RING|DROP_AMULET|DROP_POTION,  60, 96} 
+                            /*x,  y,prob, flags                             ,hlth,attk, drop flags                                                       ,dprb, exp*/
+    /* TYPE_BEAST1       */ { 4,  0, 128, FLAG_TRAVELLAND                   ,  96,  24, ItemData::DROP_WEAPON|ItemData::DROP_ARMOR                       ,  60, 64},
+    /* TYPE_BEAST2       */ { 5,  0, 128, FLAG_TRAVELLAND                   ,  96,  24, ItemData::DROP_WEAPON|ItemData::DROP_ARMOR                       ,  60, 64},
+    /* TYPE_BEAST3       */ { 6,  0, 128, FLAG_TRAVELLAND                   ,  96,  24, ItemData::DROP_WEAPON|ItemData::DROP_ARMOR                       ,  60, 64},
+    /* TYPE_BEAST4       */ { 7,  0, 128, FLAG_TRAVELLAND                   , 128,  24, ItemData::DROP_WEAPON|ItemData::DROP_ARMOR|ItemData::DROP_POTION ,  60, 64},
+    /* TYPE_SCORPION     */ { 8,  0,  96, FLAG_TRAVELLAND                   ,  64,  20, ItemData::DROP_NONE                                              ,  60, 32},
+    /* TYPE_CRAB         */ { 9,  0,  96, FLAG_TRAVELLAND | FLAG_TRAVELWATER,  64,  20, ItemData::DROP_NONE                                              ,  60, 32},
+    /* TYPE_SEASERPENT1  */ { 0,  2, 128, FLAG_TRAVELWATER                  ,  96,  24, ItemData::DROP_POTION                                            ,  60, 64},
+    /* TYPE_SEASERPENT2  */ { 1,  2, 128, FLAG_TRAVELWATER                  ,  96,  24, ItemData::DROP_POTION                                            ,  60, 64},
+    /* TYPE_KRAKEN       */ { 2,  2,  64, FLAG_TRAVELWATER                  , 192,  33, ItemData::DROP_POTION                                            , 120, 96},
+    /* TYPE_SPIDER1      */ { 3,  2,  96, FLAG_TRAVELLAND                   ,  96,  20, ItemData::DROP_NONE                                              ,  60, 64},
+    /* TYPE_SPIDER2      */ { 4,  2,  96, FLAG_TRAVELLAND                   ,  96,  20, ItemData::DROP_NONE                                              ,  60, 64},
+    /* TYPE_SPIDER3      */ { 5,  2,  96, FLAG_TRAVELLAND                   ,  96,  20, ItemData::DROP_NONE                                              ,  60, 64},
+    /* TYPE_IMP          */ { 6,  2,  64, FLAG_TRAVELLAND                   , 192,  33, ItemData::DROP_RING|ItemData::DROP_AMULET|ItemData::DROP_POTION  , 120, 96} 
     };
 
     void SetFlag(const uint16_t flag, const bool val);
     bool GetFlag(const uint16_t flag) const;
-
-    uint8_t RandomItemTypeFromDropType(RandomMT &rand, uint8_t droptype) const;
 
 };

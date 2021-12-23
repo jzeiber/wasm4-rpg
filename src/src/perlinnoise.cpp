@@ -2,14 +2,8 @@
 #include "randommt.h"
 #include "wasmmath.h"
 
-//debug
-#include "wasm4.h"
-#include "printf.h"
-#include "global.h"
-
 PerlinNoise::PerlinNoise()
 {
-	//trace("PerlinNoise::PerlinNoise()");
 	for(int i=0; i<256; i++)
 	{
 		m_perm[i]=i;
@@ -47,14 +41,6 @@ void PerlinNoise::Setup(const uint64_t seed)
 		m_perm[i]=temp;
 	}
 
-	//debug
-	/*
-	for(int i=0; i<256; i++)
-	{
-		tracef("p[%d]=%d",i,m_perm[i]);
-	}
-	*/
-
 	// calculate dirs
 	for(int i=0; i<256; i++)
 	{		 
@@ -63,7 +49,7 @@ void PerlinNoise::Setup(const uint64_t seed)
 	}
 }
 
-double PerlinNoise::Surflet(const double x, const double y, const int64_t per, const bool debug, int64_t gridx, int64_t gridy) const
+double PerlinNoise::Surflet(const double x, const double y, const int64_t per, int64_t gridx, int64_t gridy) const
 {
 	const double dgridx=static_cast<double>(gridx);
 	const double dgridy=static_cast<double>(gridy);
@@ -73,24 +59,12 @@ double PerlinNoise::Surflet(const double x, const double y, const int64_t per, c
 	const double disty=_dabs(y-dgridy);
 	const double polyx=1.0-(6.0*_pow(distx,5))+(15.0*_pow(distx,4))-(10.0*_pow(distx,3));
 	const double polyy=1.0-(6.0*_pow(disty,5))+(15.0*_pow(disty,4))-(10.0*_pow(disty,3));
-	if(debug)
-	{
-		//tracef("before hashed per=%d gx=%d gy=%d",per,gridx,gridy);
-		//trace("debug");
-		snprintf(global::buff,global::buffsize-1,"dx=%f dy=%f px=%f py=%f",distx,disty,polyx,polyy);
-		global::buff[global::buffsize-1]='\0';
-		trace(global::buff);
-	}
 	const int16_t hashed=m_perm[(m_perm[(gridx%per)%256ULL]+(gridy%per))%256ULL];
-	if(debug)
-	{
-		//tracef("after hashed %d",hashed);
-	}
 	const double grad=(x-dgridx)*m_dx[hashed]+(y-dgridy)*m_dy[hashed];
 	return polyx*polyy*grad;
 }
 
-double PerlinNoise::Noise(double x, double y, const int64_t per, const bool debug) const
+double PerlinNoise::Noise(double x, double y, const int64_t per) const
 {
 /*
 	    def surflet(gridX, gridY):
@@ -138,10 +112,10 @@ double PerlinNoise::Noise(double x, double y, const int64_t per, const bool debu
 	const int64_t inty=static_cast<int64_t>(y);
 	//trace("PerlinNoise::Noise returning");
 	//return surflet(intx+0,inty+0)+surflet(intx+1,inty+0)+surflet(intx+0,inty+1)+surflet(intx+1,inty+1);
-	return Surflet(x,y,per,debug,intx+0,inty+0)+Surflet(x,y,per,debug,intx+1,inty+0)+Surflet(x,y,per,debug,intx+0,inty+1)+Surflet(x,y,per,debug,intx+1,inty+1);
+	return Surflet(x,y,per,intx+0,inty+0)+Surflet(x,y,per,intx+1,inty+0)+Surflet(x,y,per,intx+0,inty+1)+Surflet(x,y,per,intx+1,inty+1);
 }
 
-double PerlinNoise::Get(const double x, const double y, const int64_t per, const int32_t oct, const bool debug) const
+double PerlinNoise::Get(const double x, const double y, const int64_t per, const int32_t oct) const
 {
 /*
 	    val = 0
@@ -154,14 +128,8 @@ double PerlinNoise::Get(const double x, const double y, const int64_t per, const
 	for(int i=0; i<oct; i++)
 	{
 		//trace("PerlinNoise::Get before");
-		val+=_pow(0.5,i)*Noise(static_cast<double>(x)*_pow(2.0,i),static_cast<double>(y)*_pow(2.0,i),per*_pow(2.0,i),debug);
+		val+=_pow(0.5,i)*Noise(static_cast<double>(x)*_pow(2.0,i),static_cast<double>(y)*_pow(2.0,i),per*_pow(2.0,i));
 		//trace("PerlinNoise::Get after");
-	}
-	if(debug)
-	{
-		snprintf(global::buff,global::buffsize,"x=%f y=%f v=%f",x,y,val);
-		trace(global::buff);
-		
 	}
 	return val;
 }

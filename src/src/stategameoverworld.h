@@ -58,9 +58,10 @@ private:
 
     int8_t GetNextAvailableQuestIndex() const;  // -1 if none are available
     bool HaveExistingActiveQuest(const uint64_t wx, const uint64_t wy) const;   // returns true if an existing active quest was giving by the location
+    int8_t GetExistingActiveQuest(const uint64_t wx, const uint64_t wy) const;  // returns index of an existing active quest givin by the location, or -1 if no active quest
     void DrawMenuBar();
     void DrawHealthBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
-    void DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
+    //void DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
     void DrawExpBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h);
     void DrawMobHealth(const int16_t x, const int16_t y, const int16_t health, const int16_t maxhealth);
     void GetMenuSpriteSheetPos(const int16_t option, int16_t &x, int16_t &y);

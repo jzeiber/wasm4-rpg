@@ -72,7 +72,7 @@ void StateGameCharacterSheet::Draw()
     ostr << m_gamedata->m_playerexpnextlevel << " Exp For Level Up";
     tp.Print(ostr.Buffer(),5,30,128,PALETTE_WHITE);
     ostr.Clear();
-    ostr << "Health " << m_gamedata->m_playerhealth << " / " << Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel);
+    ostr << "Health " << m_gamedata->m_playerhealth << " / " << m_gamedata->GetPlayerMaxHealth();
     tp.Print(ostr.Buffer(),5,45,128,PALETTE_WHITE);
     // calculate attack
     ostr.Clear();

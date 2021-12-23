@@ -63,6 +63,7 @@ public:
     bool WorldLocationTown(const int64_t worldx, const int64_t worldy) const;
     bool WorldLocationLand(const int64_t worldx, const int64_t worldy) const;
     bool WorldLocationWater(const int64_t worldx, const int64_t worldy) const;
+    bool FindWorldLocationTown(const int64_t cx, const int64_t cy, const int16_t rad, int64_t &townx, int64_t &towny) const;
 
     int16_t GetPlayerMeleeAttack() const;
     int16_t GetPlayerMeleeAttack(const uint8_t itemtype) const;
@@ -70,8 +71,13 @@ public:
     int16_t GetPlayerArmor() const;
     int16_t GetPlayerArmor(const uint8_t itemtype) const;
     int16_t GetEquippedArmor(const uint8_t equipslot) const;
+    int16_t GetEquippedHealth(const uint8_t equipslot) const;
+    bool HasEquippedHealth(const uint8_t equipslot) const;
+    int32_t GetPlayerMaxHealth() const;   // accounts for any items that may increase/decrease health
+
 
     void AddPlayerExperience(const int32_t exp);
+    void Consume(const uint8_t itemidx);
 
     bool HostileWithinArea(const int64_t tlx, const int64_t tly, const int64_t brx, const int64_t bry); // returns true if hostile mob within area - coords should be unwrapped (tl must always be less or equal to br)
 
@@ -82,6 +88,9 @@ public:
     void RecycleMobs(); // remove distant mobs and add close ones if needed
     bool CreateCloseMob(const int64_t x, const int64_t y, const int16_t mindist, const int16_t maxdist, const bool aggressive);
     void RecycleGroundItems();  // remove items on ground too far away
+    void CheckAndAddQuestItems();     // makes sure quest items are in inventory - adds to inventory if at source location and not in inventory
+    int8_t QuestItemInInventorySlot(const uint8_t questindex) const;
+    bool HasItemWithProperties(const uint8_t flags, const uint8_t templateflags, const bool equippedonly) const;
 
     Map &m_map;
     uint64_t m_ticks;

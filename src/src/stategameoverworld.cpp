@@ -202,14 +202,14 @@ bool StateGameOverworld::HandleInput(const Input *input)
                 // TODO - potential to interrupt with mob (rest in town no chance of interrupt)
                 RandomMT rand;
                 rand.Seed(m_tick);
-                if(m_gamedata->m_playerhealth==Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel))
+                if(m_gamedata->m_playerhealth==m_gamedata->GetPlayerMaxHealth())
                 {
                     m_gamedata->AddGameMessage("Health already full");
                 }
-                else if(m_gamedata->WorldLocationTown(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy)==true || rand.Next()%5>0)
+                else if(m_gamedata->WorldLocationTown(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy)==true || m_gamedata->HasItemWithProperties(0,ItemData::TEMPLATE_RESTFULSLEEP,true) || rand.Next()%5>0)
                 {
                     m_gamedata->AddGameMessage("Rested");
-                    m_gamedata->m_playerhealth=Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel);
+                    m_gamedata->m_playerhealth=m_gamedata->GetPlayerMaxHealth();
                 }
                 else
                 {
@@ -354,10 +354,13 @@ void StateGameOverworld::Update(const int ticks, Game *game)
         }
         else if(existingquest==true)
         {
+            /*
             m.SetText("You need to complete the existing quest from this location before accepting a new one.");
             m.SetOption(0,"Continue");
             m.SetSelectedOption(0);
             m_towndialogtype=1;
+            */
+            m_showtowndialog=false;
         }
         else
         {
@@ -366,9 +369,12 @@ void StateGameOverworld::Update(const int ticks, Game *game)
             m.SetSelectedOption(0);
             m_towndialogtype=2;
         }
-        game->ShowModalDialog(&ModalDialog::Instance());
-        m_showingtowndialog=true;
-        m_showtowndialog=false;
+        if(m_showtowndialog==true)
+        {
+            game->ShowModalDialog(&ModalDialog::Instance());
+            m_showingtowndialog=true;
+            m_showtowndialog=false;
+        }
     }
     if(m_showingtowndialog==true && ModalDialog::Instance().Shown()==false)
     {
@@ -380,6 +386,7 @@ void StateGameOverworld::Update(const int ticks, Game *game)
                 m_gamedata->m_quests[qi]=m_tempquest;
             }
             m_gamedata->QueueGameEvent(EVENT_ACCEPTQUEST,GameEventParam());
+            m_gamedata->CheckAndAddQuestItems();  // add quest item if we've just accepted quest involving item
         }
         else
         {
@@ -412,22 +419,6 @@ void StateGameOverworld::Update(const int ticks, Game *game)
         }
     }
 
-    // check if we've completed any quests
-    // right now just see if we've arrived close to destination and mark as completed
-    /*
-    for(int i=0; i<MAX_QUESTS; i++)
-    {
-        if(m_gamedata->m_quests[i].GetActive() && _abs(m_gamedata->m_quests[i].GetCurrentTargetWorldX()-m_gamedata->m_playerworldx)<4 && _abs(m_gamedata->m_quests[i].GetCurrentTargetWorldY()-m_gamedata->m_playerworldy)<4)
-        {
-            QuestCache::Instance().RemoveCache(m_gamedata->m_quests[i].m_sourcex,m_gamedata->m_quests[i].m_sourcey);
-
-            m_gamedata->m_questscompleted++;
-            m_gamedata->m_quests[i].SetActive(false);
-            m_gamedata->AddGameMessage("Quest Completed");
-        }
-    }
-    */
-
     m_gamedata->DispatchGameEvents();       // dispatch game events before recycling - in case event references mob/obj
     m_gamedata->RecycleMobs();
     m_gamedata->RecycleGroundItems();
@@ -452,15 +443,18 @@ void StateGameOverworld::Update(const int ticks, Game *game)
 
 void StateGameOverworld::Draw()
 {
+    int32_t i;
     TextPrinter tp;
     tp.SetCustomFont(&Font5x7::Instance());
     OutputStringStream ostr;
     constexpr int16_t viewsize=144;
+    int64_t x;
+    int64_t y;
 
     // draw terrain first
-    for(int64_t y=0; y<9; y++)
+    for(y=0; y<9; y++)
     {
-        for(int64_t x=0; x<9; x++)
+        for(x=0; x<9; x++)
         {
             const uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
             const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
@@ -471,13 +465,13 @@ void StateGameOverworld::Draw()
     // TODO - draw ground items
     *DRAW_COLORS=(PALETTE_BROWN << 4);
     LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
-    for(int64_t y=0; y<9; y++)
+    for(y=0; y<9; y++)
     {
-        for(int64_t x=0; x<9; x++)
+        for(x=0; x<9; x++)
         {
             const uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
             const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
-            for(int i=0; i<MAX_GROUNDITEMS; i++)
+            for(i=0; i<MAX_GROUNDITEMS; i++)
             {
                 if(m_gamedata->m_grounditem[i].GetActive()==true && m_gamedata->m_grounditemlocation[i][0]==wx && m_gamedata->m_grounditemlocation[i][1]==wy)
                 {
@@ -488,14 +482,14 @@ void StateGameOverworld::Draw()
     }
 
     // mob sprite may overlap surrounding terrain, so draw after entire terrain is drawn
-    for(int64_t y=0; y<9; y++)
+    for(y=0; y<9; y++)
     {
-        for(int64_t x=0; x<9; x++)
+        for(x=0; x<9; x++)
         {
             const uint64_t wx=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldx+x-4);
             const uint64_t wy=m_gamedata->m_map.WrapCoordinate(m_gamedata->m_playerworldy+y-4);
 
-            for(int i=0; i<MAX_MOBS; i++)
+            for(i=0; i<MAX_MOBS; i++)
             {
                 if(m_gamedata->m_mobs[i].GetActive()==true && m_gamedata->m_mobs[i].m_x==wx && m_gamedata->m_mobs[i].m_y==wy)
                 {
@@ -528,19 +522,19 @@ void StateGameOverworld::Draw()
             {
                 if(m_gamedata->m_movedir==MOVE_LEFT)
                 {
-                    blitMasked(spritecharacter,spritecharacterWidth,10,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags|BLIT_FLIP_X);
+                    blitMasked(spritecharacter,spritecharacterWidth,2,0,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags|BLIT_FLIP_X);
                 }
                 else if(m_gamedata->m_movedir==MOVE_UP || m_gamedata->m_movedir==MOVE_NONE)
                 {
-                    blitMasked(spritecharacter,spritecharacterWidth,8,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
+                    blitMasked(spritecharacter,spritecharacterWidth,0,0,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                 }
                 else if(m_gamedata->m_movedir==MOVE_RIGHT)
                 {
-                    blitMasked(spritecharacter,spritecharacterWidth,10,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
+                    blitMasked(spritecharacter,spritecharacterWidth,2,0,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                 }
                 else if(m_gamedata->m_movedir==MOVE_DOWN)
                 {
-                    blitMasked(spritecharacter,spritecharacterWidth,9,10,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
+                    blitMasked(spritecharacter,spritecharacterWidth,1,0,x*16,y*16,PALETTE_BROWN << 4,PALETTE_WHITE << 4,spritecharacterFlags);
                 }
             }
         }
@@ -548,14 +542,42 @@ void StateGameOverworld::Draw()
 
     // draw quest arrows
     {
-        for(int i=0; i<MAX_QUESTS; i++)
+        for(i=0; i<MAX_QUESTS; i++)
         {
             // TODO - check if quest is selected
             if(m_gamedata->m_quests[i].GetActive()==true && m_gamedata->m_quests[i].HasTargetLocation()==true)
             {
                 LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
-                *DRAW_COLORS=PALETTE_WHITE;
-                const float ang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_quests[i].m_destx,m_gamedata->m_quests[i].m_desty);
+                *DRAW_COLORS=(PALETTE_WHITE << 4);
+
+                const int64_t dx=m_gamedata->m_map.DeltaCoordinate(m_gamedata->m_playerworldx,m_gamedata->m_quests[i].GetCurrentTargetWorldX());
+                const int64_t dy=m_gamedata->m_map.DeltaCoordinate(m_gamedata->m_playerworldy,m_gamedata->m_quests[i].GetCurrentTargetWorldY());
+                if(dx!=0 || dy!=0)
+                {
+                    int16_t w=16;
+                    int16_t h=16;
+                    int8_t sx=0;
+                    int8_t sy=1;
+                    if(_abs(dx)>=_abs(dy))  // arrow on left or right of screen
+                    {
+                        x=(dx<0 ? -4 : viewsize-16+4);  // offset sprite by 16 pixels to the left/right
+                        y=((static_cast<float>(dy)/static_cast<float>(_abs(dx)))*(viewsize/2))+(viewsize/2)-8;  // offset 16x16 sprite by 8 pixels top/bottom to center it
+                        w=16;
+                        h=(y+16>viewsize) ? 16-(y+16-viewsize) : 16;
+                        sx=(dx<0 ? 3 : 1);
+                    }
+                    else    // arrow on top or bottom of screen
+                    {
+                        x=((static_cast<float>(dx)/static_cast<float>(_abs(dy)))*(viewsize/2))+(viewsize/2)-8;
+                        y=(dy<0 ? -4 : viewsize-16+4);
+                        w=(x+16>viewsize) ? 16-(x+16-viewsize) : 16;
+                        h=16;
+                        sx=(dy<0 ? 0 : 2);
+                    }
+                    LZ4Blitter::Instance().Blit(x,y,w,h,sx,sy,spriteitemFlags);
+                }
+                /*
+                const float ang=m_gamedata->m_map.ComputeAngle(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy,m_gamedata->m_quests[i].GetCurrentTargetWorldX(),m_gamedata->m_quests[i].GetCurrentTargetWorldY());
                 // check for nan
                 if(ang==ang)
                 {
@@ -573,12 +595,10 @@ void StateGameOverworld::Draw()
                         const int16_t h=(ypos+16>viewsize ? 16-(ypos+16-viewsize) : 16);
                         if(dx<0)
                         {
-                            //blitSub(spriteitem,xpos,ypos,16,h,(7*16),(14*16),spriteitemWidth,spriteitemFlags);
                             LZ4Blitter::Instance().Blit(xpos,ypos,16,h,3,1,spriteitemFlags);
                         }
                         else
                         {
-                            //blitSub(spriteitem,xpos,ypos,16,h,(5*16),(14*16),spriteitemWidth,spriteitemFlags);
                             LZ4Blitter::Instance().Blit(xpos,ypos,16,h,1,1,spriteitemFlags);
                         }
                     }
@@ -590,17 +610,15 @@ void StateGameOverworld::Draw()
                         const int16_t w=(xpos+16>viewsize ? 16-(xpos+16-viewsize) : 16);
                         if(dy<0)
                         {
-                            //blitSub(spriteitem,xpos,ypos,w,16,(4*16),(14*16),spriteitemWidth,spriteitemFlags);
                             LZ4Blitter::Instance().Blit(xpos,ypos,w,16,0,1,spriteitemFlags);
                         }
                         else
                         {
-                            //blitSub(spriteitem,xpos,ypos,w,16,(6*16),(14*16),spriteitemWidth,spriteitemFlags);
                             LZ4Blitter::Instance().Blit(xpos,ypos,w,16,2,1,spriteitemFlags);
                         }
                     }
                 }
-
+                */
             }
         }
     }
@@ -620,17 +638,25 @@ void StateGameOverworld::Draw()
     // draw ground items on left
     {
         int ic=0;
-        for(int i=0; i<MAX_GROUNDITEMS; i++)
+        for(i=0; i<MAX_GROUNDITEMS; i++)
         {
             if(m_gamedata->m_grounditem[i].GetActive()==true && m_gamedata->m_grounditemlocation[i][0]==m_gamedata->m_playerworldx && m_gamedata->m_grounditemlocation[i][1]==m_gamedata->m_playerworldy)
             {
                 if(ic<2)
                 {
-                    if(m_gamedata->m_grounditem[i].GetEquipable()==true && m_gamedata->m_grounditem[i].GetMeleeAttack() > m_gamedata->GetEquippedMeleeAttack(m_gamedata->m_grounditem[i].GetEquipSlot()))
+                    if(m_gamedata->m_grounditem[i].GetQuestItem()==true)
+                    {
+                        *DRAW_COLORS=(PALETTE_BLUE << 4);
+                    }
+                    else if(m_gamedata->m_grounditem[i].GetEquipable()==true && m_gamedata->m_grounditem[i].GetMeleeAttack() > m_gamedata->GetEquippedMeleeAttack(m_gamedata->m_grounditem[i].GetEquipSlot()))
                     {
                         *DRAW_COLORS=(PALETTE_GREEN << 4);
                     }
                     else if(m_gamedata->m_grounditem[i].GetEquipable()==true && m_gamedata->m_grounditem[i].GetArmor() > m_gamedata->GetEquippedArmor(m_gamedata->m_grounditem[i].GetEquipSlot()))
+                    {
+                        *DRAW_COLORS=(PALETTE_GREEN << 4);
+                    }
+                    else if(m_gamedata->m_grounditem[i].GetEquipable()==true && m_gamedata->m_grounditem[i].GetHealth(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)) > m_gamedata->GetEquippedHealth(m_gamedata->m_grounditem[i].GetEquipSlot()))
                     {
                         *DRAW_COLORS=(PALETTE_GREEN << 4);
                     }
@@ -653,11 +679,11 @@ void StateGameOverworld::Draw()
 
     // print messages
     int16_t tpos=viewsize-(m_gamedata->GameMessageCount()*8);
-    for(int i=0; i<MAX_GAMEMESSAGE; i++)
+    for(i=0; i<MAX_GAMEMESSAGE; i++)
     {
         if(m_gamedata->m_gamemessagedecay[i]>0 && m_gamedata->m_gamemessages[i])
         {
-            tp.Print(m_gamedata->m_gamemessages[i],10,tpos,20,PALETTE_BROWN);
+            tp.Print(m_gamedata->m_gamemessages[i],1,tpos,30,PALETTE_BROWN);
             tpos+=8;
         }
     }
@@ -669,43 +695,35 @@ void StateGameOverworld::Draw()
 
 void StateGameOverworld::GetMenuSpriteSheetPos(const int16_t option, int16_t &x, int16_t &y)
 {
+    y=0;
     switch(option)
     {
     case OPTION_SAVE:
         x=(7*16);
-        y=0;
         break;
     case OPTION_JOURNAL:
         x=(2*16);
-        y=0;
         break;
     case OPTION_MAP:
         x=(3*16);
-        y=0;
         break;
     case OPTION_INVENTORY:
         x=(9*16);
-        y=0;
         break;
     case OPTION_REST:
         x=0;
-        y=0;
         break;
     case OPTION_CHARACTER:
         x=(10*16);
-        y=0;
         break;
     case OPTION_PICKUP:
         x=(4*16);
-        y=0;
         break;
     case OPTION_HOME:
         x=(6*16);
-        y=0;
         break;
     default:
         x=0;
-        y=0;
     }
 }
 
@@ -725,7 +743,7 @@ void StateGameOverworld::DrawMenuBar()
 
 void StateGameOverworld::DrawHealthBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
 {
-    const int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
+    const int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(m_gamedata->GetPlayerMaxHealth()))*(h-4);
 
     *DRAW_COLORS=(PALETTE_WHITE << 4);
     rect(x,y,w,h);
@@ -736,17 +754,16 @@ void StateGameOverworld::DrawHealthBar(const int16_t x, const int16_t y, const i
         rect(x+2,y+2+((h-4)-hph),w-4,hph);
     }
 }
-
+/*
 void StateGameOverworld::DrawManaBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
 {
-    //int16_t hph=(static_cast<double>(m_gamedata->m_playerhealth)/static_cast<double>(Game::Instance().GetLevelMaxHealth(m_gamedata->m_playerlevel)))*(h-4);
     int16_t mh=h-4;
     *DRAW_COLORS=(PALETTE_WHITE << 4);
     rect(x,y,w,h);
     *DRAW_COLORS=(PALETTE_BLUE << 4);
     rect(x+2,y+2+((h-4)-mh),w-4,mh);
 }
-
+*/
 void StateGameOverworld::DrawExpBar(const int16_t x, const int16_t y, const int16_t w, const int16_t h)
 {
     int32_t nextexp=Game::Instance().GetNextLevelExperience(m_gamedata->m_playerlevel);
@@ -771,7 +788,7 @@ void StateGameOverworld::DrawMobHealth(const int16_t x, const int16_t y, const i
 
 int8_t StateGameOverworld::GetNextAvailableQuestIndex() const
 {
-    for(int i=0; i<MAX_QUESTS; i++)
+    for(int32_t i=0; i<MAX_QUESTS; i++)
     {
         if(m_gamedata->m_quests[i].GetActive()==false)
         {
@@ -783,12 +800,17 @@ int8_t StateGameOverworld::GetNextAvailableQuestIndex() const
 
 bool StateGameOverworld::HaveExistingActiveQuest(const uint64_t wx, const uint64_t wy) const
 {
-    for(int i=0; i<MAX_QUESTS; i++)
+    return (GetExistingActiveQuest(wx,wy)>-1);
+}
+
+int8_t StateGameOverworld::GetExistingActiveQuest(const uint64_t wx, const uint64_t wy) const
+{
+    for(int32_t i=0; i<MAX_QUESTS; i++)
     {
         if(m_gamedata->m_quests[i].GetActive()==true && m_gamedata->m_quests[i].m_sourcex==wx && m_gamedata->m_quests[i].m_sourcey==wy)
         {
-            return true;
+            return i;
         }
     }
-    return false;
+    return -1;
 }

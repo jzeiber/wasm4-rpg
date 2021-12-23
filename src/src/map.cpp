@@ -113,7 +113,7 @@ uint8_t Map::GetTerrainType(const uint64_t worldx, const uint64_t worldy, const 
 		}
 	}
 	
-	const double h=m_perlin.Get(static_cast<double>(wx)*4.0/static_cast<double>(m_worldsize),static_cast<double>(wy)*4.0/static_cast<double>(m_worldsize),4,10,false);
+	const double h=m_perlin.Get(static_cast<double>(wx)*4.0/static_cast<double>(m_worldsize),static_cast<double>(wy)*4.0/static_cast<double>(m_worldsize),4,10);
 	if(h<0.0)
 	{
 		return Tile::TERRAIN_WATER;
@@ -159,7 +159,7 @@ Tile Map::ComputeTile(const uint64_t worldx, const uint64_t worldy)
 	Tile t;
 	const int64_t wx=WrapCoordinate(worldx);
 	const int64_t wy=WrapCoordinate(worldy);
-	const double h=m_perlin.Get(static_cast<double>(wx)*4.0/static_cast<double>(m_worldsize),static_cast<double>(wy)*4.0/static_cast<double>(m_worldsize),4,10,false);
+	const double h=m_perlin.Get(static_cast<double>(wx)*4.0/static_cast<double>(m_worldsize),static_cast<double>(wy)*4.0/static_cast<double>(m_worldsize),4,10);
 	
 	m_rand.Seed(m_seed ^ ((wx << 32) | wy));
 
@@ -262,15 +262,6 @@ bool Map::LandMaskSet(const uint8_t landmask, const uint8_t checkmask) const
 
 void Map::DrawTile(const uint64_t worldx, const uint64_t worldy, const int64_t screenx, const int64_t screeny)
 {
-/*
-void blitSub (const char* data, int x, int y, int width, int height, int srcX, int srcY, int stride, int flags);
-
-#define BLIT_2BPP 1
-#define BLIT_1BPP 0
-#define BLIT_FLIP_X 2
-#define BLIT_FLIP_Y 4
-#define BLIT_ROTATE 8
-*/
 	LZ4Blitter::Instance().SetSheet((uint8_t **)spriteterrain,spriteterrainWidth,spriteterrainRowHeight);
 	int64_t wx=WrapCoordinate(worldx);
 	int64_t wy=WrapCoordinate(worldy);
@@ -296,109 +287,81 @@ void blitSub (const char* data, int x, int y, int width, int height, int srcX, i
 			rect(screenx,screeny,16,16);
 			
 			const uint8_t landmask=GetLandMask(worldx,worldy);
+			const uint8_t masktlbr=landmask & (LAND_MASK_TOP | LAND_MASK_RIGHT | LAND_MASK_BOTTOM | LAND_MASK_LEFT);
 			*DRAW_COLORS=PALETTE_GREEN;
 			uint32_t drawflags=spriteterrainFlags;
 			int16_t idxx=-1;
 			int16_t idxy=11;
 
-			// TODO - change these all to use land mask
 			// land to the left
-			//if(GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_WATER)
-			if((landmask & LAND_MASK_LEFT)==LAND_MASK_LEFT && (landmask & LAND_MASK_TOP)==0 && (landmask & LAND_MASK_BOTTOM)==0)
+			if(masktlbr==LAND_MASK_LEFT)
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(1*16),(11*16),spriteterrainWidth,BLIT_1BPP);
 				idxx=1;
 			}
 			// land below
-			//if(GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_WATER)
-			if((landmask & LAND_MASK_BOTTOM)==LAND_MASK_BOTTOM && (landmask & LAND_MASK_LEFT)==0 && (landmask & LAND_MASK_RIGHT)==0)
+			else if(masktlbr==LAND_MASK_BOTTOM)
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(1*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_ROTATE);
 				idxx=1;
 				drawflags=spriteterrainFlags|BLIT_ROTATE;
 			}
 			// land right
-			//if(GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_WATER)
-			if((landmask & LAND_MASK_RIGHT)==LAND_MASK_RIGHT && (landmask & LAND_MASK_TOP)==0 && (landmask & LAND_MASK_BOTTOM)==0)
+			else if(masktlbr==LAND_MASK_RIGHT)
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(1*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_X);
 				idxx=1;
 				drawflags=spriteterrainFlags|BLIT_FLIP_X;
 			}
 			// land above
-			//if(GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_WATER)
-			if((landmask & LAND_MASK_TOP)==LAND_MASK_TOP && (landmask & LAND_MASK_LEFT)==0 && (landmask & LAND_MASK_RIGHT)==0)
+			else if(masktlbr==LAND_MASK_TOP)
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(1*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_X|BLIT_ROTATE);
 				idxx=1;
 				drawflags=spriteterrainFlags|BLIT_FLIP_X|BLIT_ROTATE;
 			}
 			// land left and above
-			if(GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_LEFT | LAND_MASK_TOP))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(2*16),(11*16),spriteterrainWidth,BLIT_1BPP);
 				idxx=2;
 			}
 			// land right and above
-			if(GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_TOP | LAND_MASK_RIGHT))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(2*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_X);
 				idxx=2;
 				drawflags=spriteterrainFlags|BLIT_FLIP_X;
 			}
 			// land below and left
-			if(GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_BOTTOM | LAND_MASK_LEFT))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(2*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_ROTATE);
 				idxx=2;
 				drawflags=spriteterrainFlags|BLIT_ROTATE;
 			}
 			// land below and right
-			if(GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_WATER && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_RIGHT | LAND_MASK_BOTTOM))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(2*16),(11*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_Y|BLIT_ROTATE);
 				idxx=2;
 				drawflags=spriteterrainFlags|BLIT_FLIP_Y|BLIT_ROTATE;
 			}
 			// land below,left,and top
-			if(GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_BOTTOM | LAND_MASK_LEFT | LAND_MASK_TOP))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(4*16),(10*16),spriteterrainWidth,BLIT_1BPP|BLIT_ROTATE);
 				idxx=4;
 				idxy=10;
 				drawflags=spriteterrainFlags|BLIT_ROTATE;
 			}
 			// land left,top,and right
-			if(GetTerrainType(worldx-1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy-1,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx+1,worldy,true)==Tile::TERRAIN_LAND && GetTerrainType(worldx,worldy+1,true)==Tile::TERRAIN_WATER)
+			else if(masktlbr==(LAND_MASK_LEFT | LAND_MASK_TOP | LAND_MASK_RIGHT))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(4*16),(10*16),spriteterrainWidth,BLIT_1BPP);
 				idxx=4;
 				idxy=10;
 			}
 			// land top,right, and bottom
-			if((landmask & LAND_MASK_TOP)==LAND_MASK_TOP && (landmask & LAND_MASK_RIGHT)==LAND_MASK_RIGHT && (landmask & LAND_MASK_BOTTOM)==LAND_MASK_BOTTOM && (landmask & LAND_MASK_LEFT)==0)
+			else if(masktlbr==(LAND_MASK_TOP | LAND_MASK_RIGHT | LAND_MASK_BOTTOM))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(4*16),(10*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_Y|BLIT_ROTATE);
 				idxx=4;
 				idxy=10;
 				drawflags=spriteterrainFlags|BLIT_FLIP_Y|BLIT_ROTATE;
 			}
 			// land right,bottom,and left
-			if((landmask & LAND_MASK_RIGHT)==LAND_MASK_RIGHT && (landmask & LAND_MASK_BOTTOM)==LAND_MASK_BOTTOM && (landmask & LAND_MASK_LEFT)==LAND_MASK_LEFT && (landmask & LAND_MASK_TOP)==0)
+			else if(masktlbr==(LAND_MASK_RIGHT | LAND_MASK_BOTTOM | LAND_MASK_LEFT))
 			{
-				//*DRAW_COLORS=(PALETTE_GREEN << 0);
-				//blitSub(spriteterrain,screenx,screeny,16,16,(4*16),(10*16),spriteterrainWidth,BLIT_1BPP|BLIT_FLIP_Y);
 				idxx=4;
 				idxy=10;
 				drawflags=spriteterrainFlags|BLIT_FLIP_Y;
@@ -501,7 +464,7 @@ float Map::ComputeDistanceSq(const int64_t sourcex, const int64_t sourcey, const
 	UnwrapCoordinates(sx,dx,sx,dx);
 	UnwrapCoordinates(sy,dy,sy,dy);
 
-	return ((sx-dx)*(sx-dx))+((sy-dy)*(dy-dy));
+	return ((sx-dx)*(sx-dx))+((sy-dy)*(sy-dy));
 }
 
 int64_t Map::ComputeDistanceCoord(const int64_t source, const int64_t dest) const

@@ -51,16 +51,16 @@ public:
 	
 	void Setup(const uint64_t seed);
 	
-	double Get(const double x, const double y, const int64_t per, const int32_t oct, const bool debug) const;
+	double Get(const double x, const double y, const int64_t per, const int32_t oct) const;
 	
 private:
 	int16_t m_perm[256];
 	float m_dx[256];
 	float m_dy[256];
 	
-	double Surflet(const double x, const double y, const int64_t per, const bool debug, int64_t gridx, int64_t gridy) const;
+	double Surflet(const double x, const double y, const int64_t per, int64_t gridx, int64_t gridy) const;
 	
-	double Noise(double x, double y, const int64_t per, const bool debug) const;
+	double Noise(double x, double y, const int64_t per) const;
 	
 	
 };

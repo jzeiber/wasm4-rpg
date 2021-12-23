@@ -2,6 +2,7 @@
 #include "gameio.h"
 #include "outputstringstream.h"
 #include "miscfuncs.h"
+#include "wasmmath.h"
 
 ItemData::ItemData()
 {
@@ -65,9 +66,39 @@ void ItemData::SetEquipable(const bool equipable)
     SetFlag(FLAG_EQUIPABLE,equipable);
 }
 
+
+bool ItemData::GetConsumable() const
+{
+    return GetFlag(FLAG_CONSUMABLE);
+}
+
+void ItemData::SetConsumable(const bool consumable)
+{
+    SetFlag(FLAG_CONSUMABLE,consumable);
+}
+
+bool ItemData::GetQuestItem() const
+{
+    return GetFlag(FLAG_QUESTITEM);
+}
+
+void ItemData::SetQuestItem(const bool questitem)
+{
+    SetFlag(FLAG_QUESTITEM,questitem);
+}
+
 void ItemData::SetTemplate(const uint8_t templateidx)
 {
     m_template=templateidx;
+}
+
+void ItemData::ApplyTemplate(const uint8_t templateidx)
+{
+    if(templateidx<m_itemtemplatecount)
+    {
+        m_template=templateidx;
+        m_flags=m_itemtemplate[templateidx].flags;
+    }
 }
 
 uint8_t ItemData::GetType() const
@@ -76,6 +107,15 @@ uint8_t ItemData::GetType() const
     if(m_template<m_itemtemplatecount)
     {
         return m_itemtemplate[m_template].type;
+    }
+    return 0;
+}
+
+uint8_t ItemData::TemplateFlags() const
+{
+    if(m_template<m_itemtemplatecount)
+    {
+        return m_itemtemplate[m_template].templateflags;
     }
     return 0;
 }
@@ -89,6 +129,43 @@ uint8_t ItemData::GetGlyphIndex() const
     }
     return 0;
 }
+
+bool ItemData::GetAddHealth() const
+{
+    if(m_template>=0 && m_template<m_itemtemplatecount)
+    {
+        return (m_itemtemplate[m_template].templateflags & TEMPLATE_ADDHEALTH) == TEMPLATE_ADDHEALTH;
+    }
+    return false;
+}
+
+bool ItemData::GetAddArmor() const
+{
+    if(m_template>=0 && m_template<m_itemtemplatecount)
+    {
+        return (m_itemtemplate[m_template].templateflags & TEMPLATE_ADDARMOR) == TEMPLATE_ADDARMOR;
+    }
+    return false;
+}
+
+bool ItemData::GetAddMeleeAttack() const
+{
+    if(m_template>=0 && m_template<m_itemtemplatecount)
+    {
+        return (m_itemtemplate[m_template].templateflags & TEMPLATE_ADDMELEEATTACK) == TEMPLATE_ADDMELEEATTACK;
+    }
+    return false;
+}
+
+bool ItemData::GetRegenHealth() const
+{
+    if(m_template>=0 && m_template<m_itemtemplatecount)
+    {
+        return (m_itemtemplate[m_template].templateflags & TEMPLATE_ADDHEALTH) == TEMPLATE_ADDHEALTH;
+    }
+    return false;
+}
+
 /*
 void ItemData::SetGlyphIndex(const uint8_t glyphindex)
 {
@@ -181,7 +258,7 @@ bool ItemData::LoadItemData(void *data)
 
 int16_t ItemData::GetMeleeAttack() const
 {
-    if(GetType()==TYPE_MELEEWEAPON)
+    if(GetType()==TYPE_MELEEWEAPON || GetAddMeleeAttack()==true)
     {
         return m_data[0];
     }
@@ -191,15 +268,31 @@ int16_t ItemData::GetMeleeAttack() const
 int16_t ItemData::GetArmor() const
 {
     const uint8_t itemtype=GetType();
-    if(itemtype==TYPE_HELMET || itemtype==TYPE_BODYARMOR || itemtype==TYPE_GAUNTLET || itemtype==TYPE_LEGARMOR || itemtype==TYPE_BOOT || itemtype==TYPE_SHIELD)
+    if(itemtype==TYPE_HELMET || itemtype==TYPE_BODYARMOR || itemtype==TYPE_GAUNTLET || itemtype==TYPE_LEGARMOR || itemtype==TYPE_BOOT || itemtype==TYPE_SHIELD || GetAddArmor()==true)
     {
         return m_data[0];
     }
     return 0;
 }
 
+int16_t ItemData::GetHealth(const int16_t levelhealth) const
+{
+    if(m_template>=0 && m_template<m_itemtemplatecount)
+    {
+        if((m_itemtemplate[m_template].templateflags & TEMPLATE_ADDHEALTH) == TEMPLATE_ADDHEALTH)
+        {
+            if((m_itemtemplate[m_template].templateflags & TEMPLATE_RESTFULSLEEP) == TEMPLATE_RESTFULSLEEP)
+            {
+                return -(levelhealth/2);
+            }
+            return m_data[0];
+        }
+    }
+    return 0;
+}
+
 /*
-bool ItemData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param)
+bool ItemData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param, const int8_t idx)
 {
     if(GetActive()==true)
     {
@@ -235,6 +328,15 @@ const char *ItemData::GetShortDescription() const
     return nullptr;
 }
 
+const char *ItemData::GetShortDescription(uint8_t itemtemplate)
+{
+    if(itemtemplate<m_itemtemplatecount)
+    {
+        return m_itemtemplate[itemtemplate].shortdesc;
+    }
+    return nullptr;
+}
+
 const char *ItemData::GetDescription() const
 {
     if(m_template<m_itemtemplatecount)
@@ -242,6 +344,19 @@ const char *ItemData::GetDescription() const
         return m_itemtemplate[m_template].desc;
     }
     return nullptr;
+}
+
+bool ItemData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param, const int8_t idx)
+{
+    if(GetActive()==true)
+    {
+        switch(eventtype)
+        {
+        case GameEvent::EVENT_PLAYERMOVE:
+            break;
+        }
+    }
+    return true;
 }
 
 bool ItemData::MatchTemplate(const uint8_t itemtype, const uint8_t equipslot, const uint8_t templateidx) const
@@ -254,6 +369,74 @@ bool ItemData::MatchTemplate(const uint8_t itemtype, const uint8_t equipslot, co
         }
     }
     return false;
+}
+
+uint8_t ItemData::RandomItemTypeFromDropType(RandomMT &rand, uint8_t droptype)
+{
+    uint8_t itemtype=0;
+    uint8_t typecount=0;
+    bool types[ItemData::TYPE_MAX];
+    for(int i=0; i<ItemData::TYPE_MAX; i++)
+    {
+        types[i]=false;
+    }
+    if((droptype & ItemData::DROP_WEAPON)==ItemData::DROP_WEAPON)
+    {
+        types[ItemData::TYPE_MELEEWEAPON]=true;
+        //types[ItemData::TYPE_PROJECTILEWEAPON]=true;
+        typecount+=1;
+    }
+    if((droptype & ItemData::DROP_ARMOR)==ItemData::DROP_ARMOR)
+    {
+        types[ItemData::TYPE_SHIELD]=true;
+        types[ItemData::TYPE_HELMET]=true;
+        types[ItemData::TYPE_BODYARMOR]=true;
+        types[ItemData::TYPE_GAUNTLET]=true;
+        //types[ItemData::TYPE_LEGARMOR]=true;
+        types[ItemData::TYPE_BOOT]=true;
+        typecount+=5;
+    }
+    if((droptype & ItemData::DROP_RING)==ItemData::DROP_RING)
+    {
+        //trace("not impelemented");
+        //types[ItemData::TYPE_RING]=true;
+        //typecount+=1;
+    }
+    if((droptype & ItemData::DROP_AMULET)==ItemData::DROP_AMULET)
+    {
+        //trace("not impelemented");
+        types[ItemData::TYPE_AMULET]=true;
+        typecount+=1;
+    }
+    if((droptype & ItemData::DROP_POTION)==ItemData::DROP_POTION)
+    {
+        //trace("not impelemented");
+        // potions not implemented yet
+        //types[ItemData::TYPE_MANAPOTION]=true;
+        types[ItemData::TYPE_HEALTHPOTION]=true;
+        //types[ItemData::TYPE_EXPPOTION]=true;
+        typecount+=1;
+    }
+
+    if(typecount>0)
+    {
+        int r=rand.Next()%typecount;
+        uint8_t count=0;
+        for(int i=0; i<ItemData::TYPE_MAX; i++)
+        {
+            if(types[i]==true)
+            {
+                count++;
+                if(count>r)
+                {
+                    itemtype=i;
+                    break;
+                }
+            }
+        }
+    }
+
+    return itemtype;
 }
 
 bool ItemData::CreateRandom(RandomMT &rand, const uint8_t itemtype, const uint8_t equipslot, const int16_t level)
@@ -278,8 +461,7 @@ bool ItemData::CreateRandom(RandomMT &rand, const uint8_t itemtype, const uint8_
                 if(total>r)
                 {
                     Reset();
-                    SetTemplate(i);
-                    m_flags|=m_itemtemplate[i].flags;
+                    ApplyTemplate(i);
                     // attack / armor
                     if(GetType()==TYPE_MELEEWEAPON || GetType()==TYPE_PROJECTILEWEAPON)
                     {
@@ -287,7 +469,19 @@ bool ItemData::CreateRandom(RandomMT &rand, const uint8_t itemtype, const uint8_
                     }
                     if(GetType()==TYPE_SHIELD || GetType()==TYPE_HELMET || GetType()==TYPE_BODYARMOR || GetType()==TYPE_GAUNTLET || GetType()==TYPE_LEGARMOR || GetType()==TYPE_BOOT)
                     {
-                        m_data[0]=level;
+                        m_data[0]=_max(1,level/5);
+                    }
+                    if(GetAddArmor()==true)
+                    {
+                        m_data[0]=_max(1,_sqrt((level/10)));
+                    }
+                    if(GetAddMeleeAttack()==true)
+                    {
+                        m_data[0]=_max(1,_sqrt((level/10)));
+                    }
+                    if(GetAddHealth()==true)
+                    {
+                        m_data[0]=_max(1,level/5);
                     }
                     return true;
                 }

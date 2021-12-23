@@ -12,7 +12,7 @@ public:
     IGameEventHandler()             { };
     virtual ~IGameEventHandler()    { };
 
-    virtual bool HandleGameEvent(const int16_t eventype, GameData *gamedata, GameEventParam param)=0;
+    virtual bool HandleGameEvent(const int16_t eventype, GameData *gamedata, GameEventParam param, const int8_t idx)=0;
 
 private:
 

@@ -24,13 +24,14 @@ ModalDialog &ModalDialog::Instance()
 
 bool ModalDialog::HandleInput(const Input *input)
 {
+    int32_t i;
     if(input->GamepadButtonPress(1,BUTTON_1)==true)
     {
         m_closedialog=true;
     }
     if(input->GamepadButtonPress(1,BUTTON_UP) || input->GamepadButtonPress(1,BUTTON_LEFT))
     {
-        for(int i=m_selectedoption-1; i>=0; i--)
+        for(i=m_selectedoption-1; i>=0; i--)
         {
             if(m_options[i][0]!='\0')
             {
@@ -42,7 +43,7 @@ bool ModalDialog::HandleInput(const Input *input)
     if(input->GamepadButtonPress(1,BUTTON_DOWN) || input->GamepadButtonPress(1,BUTTON_RIGHT) || input->GamepadButtonPress(1,BUTTON_2)==true)
     {
         bool changedoption=false;
-        for(int i=m_selectedoption+1; i<4; i++)
+        for(i=m_selectedoption+1; i<4; i++)
         {
             if(m_options[i][0]!='\0')
             {
@@ -53,7 +54,7 @@ bool ModalDialog::HandleInput(const Input *input)
         }
         if(changedoption==false && input->GamepadButtonPress(1,BUTTON_2)==true)
         {
-            for(int i=0; i<m_selectedoption; i++)
+            for(i=0; i<m_selectedoption; i++)
             {
                 if(m_options[i][0]!='\0')
                 {
@@ -77,11 +78,14 @@ void ModalDialog::Update(const int ticks, Game *game)
 
 void ModalDialog::Draw()
 {
+    int16_t x;
+    int16_t y;
+
     //cross hatch background
     *DRAW_COLORS=PALETTE_BROWN;
-    for(int16_t y=0; y<SCREEN_SIZE; y++)
+    for(y=0; y<SCREEN_SIZE; y++)
     {
-        for(int16_t x=0; x<SCREEN_SIZE; x++)
+        for(x=0; x<SCREEN_SIZE; x++)
         {
             if((x+y)%2==0)
             {
@@ -97,8 +101,8 @@ void ModalDialog::Draw()
     tp.SetCustomFont(m_font);
     int16_t pos=0;
     int16_t len=0;
-    int16_t ypos=TextStartYPos();
-    int16_t xpos=TextStartXPos();
+    y=TextStartYPos();
+    x=TextStartXPos();
     for(int i=0; i<15 && m_text[pos]; i++)
     {
         if(m_wrappos[i]>=0)
@@ -109,45 +113,46 @@ void ModalDialog::Draw()
         {
             len=192;
         }
-        tp.Print(&m_text[pos],xpos,ypos,len,PALETTE_WHITE);
+        tp.Print(&m_text[pos],x,y,len,PALETTE_WHITE);
         pos+=len;
-        ypos+=tp.LineHeight();
+        y+=tp.LineHeight();
     }
 
-    ypos=OptionsStartYPos();
-    xpos=((SCREEN_SIZE-m_textwidth)/2)+(m_textwidth/4);
+    y=OptionsStartYPos();
+    x=((SCREEN_SIZE-m_textwidth)/2)+(m_textwidth/4);
     for(int i=0; i<4; i++)
     {
         if(m_options[i][0]!='\0')
         {
-            tp.PrintCentered(m_options[i],xpos,ypos,10,PALETTE_WHITE);
-            xpos+=(m_textwidth/2);
+            tp.PrintCentered(m_options[i],x,y,10,PALETTE_WHITE);
+            x+=(m_textwidth/2);
         }
         if(i==1)
         {
-            ypos+=tp.LineHeight()+(tp.LineHeight()/2);
-            xpos=((SCREEN_SIZE-m_textwidth)/2)+(m_textwidth/4);
+            y+=tp.LineHeight()+(tp.LineHeight()/2);
+            x=((SCREEN_SIZE-m_textwidth)/2)+(m_textwidth/4);
         }
     }
 
     if(m_selectedoption>=0 && m_selectedoption<4 && m_options[m_selectedoption])
     {
-        int16_t xpos=TextStartXPos()+(m_selectedoption%2==1 ? (m_textwidth/2) : 0);
-        int16_t ypos=OptionsStartYPos()+(m_selectedoption>1 ? tp.LineHeight()+(tp.LineHeight()/2) : 0);
+        x=TextStartXPos()+(m_selectedoption%2==1 ? (m_textwidth/2) : 0);
+        y=OptionsStartYPos()+(m_selectedoption>1 ? tp.LineHeight()+(tp.LineHeight()/2) : 0);
         *DRAW_COLORS=PALETTE_WHITE << 4;
-        rect(xpos-2,ypos-2,(m_textwidth/2)+4,tp.LineHeight()+4);
+        rect(x-2,y-2,(m_textwidth/2)+4,tp.LineHeight()+4);
     }
 
 }
 
 void ModalDialog::Reset()
 {
+    int32_t i;
     m_text[0]='\0';
-    for(int i=0; i<4; i++)
+    for(i=0; i<4; i++)
     {
         m_options[i][0]='\0';
     }
-    for(int i=0; i<15; i++)
+    for(i=0; i<15; i++)
     {
         m_wrappos[i]=-1;
     }

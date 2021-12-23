@@ -1,6 +1,5 @@
 #include "Font5x7.h"
 #include "spritefont5x7.h"
-#include "palette.h"
 #include "wasm4.h"
 
 Font5x7::Font5x7()

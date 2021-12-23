@@ -119,7 +119,7 @@ void Game::Update(const int ticks, Game *game)
 				{
 					if(m_gamedata.m_gamemessages[j][0]=='\0' && m_gamedata.m_gamemessages[j+1][0]!='\0')
 					{
-						strncpy(m_gamedata.m_gamemessages[j],m_gamedata.m_gamemessages[j+1],19);
+						strncpy(m_gamedata.m_gamemessages[j],m_gamedata.m_gamemessages[j+1],31);
 						m_gamedata.m_gamemessagedecay[j]=m_gamedata.m_gamemessagedecay[j+1];
 
 						m_gamedata.m_gamemessages[j+1][0]='\0';
@@ -336,5 +336,5 @@ int32_t Game::GetMinExperienceGain(const int16_t level) const
 
 int32_t Game::GetLevelMaxHealth(const int16_t level) const
 {
-	return 10+(level*2);
+	return 8+(level*2);
 }

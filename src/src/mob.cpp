@@ -184,12 +184,14 @@ int8_t Mob::GetQuestIndex() const
     return ((m_data[3] & 0xf0) >> 4)-1;
 }
 
-bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param)
+bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEventParam param, const int8_t idx)
 {
     bool trymove=false;
     if(eventtype==EVENT_PLAYERATTACK && param.m_targetmob==this)
     {
-        if(m_health<param.m_int16[0])
+        int16_t damage=param.m_int16[0];
+        damage=_max(1,damage-GetArmor());
+        if(m_health<damage)
         {
             RandomMT rand;
             rand.Seed(static_cast<uint64_t>(m_x) << 32 | static_cast<uint64_t>(m_y));
@@ -199,7 +201,9 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
             SetActive(false);
             gamedata->AddGameMessage("Killed Mob");
 
-            int32_t exp=Game::Instance().GetMinExperienceGain(m_level)+(Game::Instance().GetMaxExperienceGain(m_level)*rand.NextGaussianDouble()*(static_cast<double>(m_mobdata[m_type].expmult)/64.0));
+            const int32_t maxgain=Game::Instance().GetMaxExperienceGain(m_level);
+            const int32_t diffgain=maxgain-Game::Instance().GetMinExperienceGain(m_level);
+            int32_t exp=(Game::Instance().GetMinExperienceGain(m_level)+(diffgain*rand.NextGaussianDouble()))*(static_cast<double>(m_mobdata[m_type].expmult)/64.0);
             gamedata->AddPlayerExperience(exp);
 
             // TODO queue game event - add quest index if set in param
@@ -219,7 +223,7 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
                     bitcheck=rand.Next()%8;
                 }
 
-                itemtype=RandomItemTypeFromDropType(rand,(1 << bitcheck));
+                itemtype=ItemData::RandomItemTypeFromDropType(rand,(1 << bitcheck));
                 equipslot=ItemData::EQUIP_ANY;
 
                 ItemData item;
@@ -236,7 +240,7 @@ bool Mob::HandleGameEvent(const int16_t eventtype, GameData *gamedata, GameEvent
         }
         else
         {
-            m_health-=param.m_int16[0];
+            m_health-=damage;
             SetAggressive(true);
             gamedata->AddGameMessage("Attacked Mob");
         }
@@ -401,12 +405,27 @@ int16_t Mob::GetSpriteIdxY() const
     return 0;
 }
 
+int16_t Mob::GetAttack() const
+{
+    if(m_type>=0 && m_type<MobType::TYPE_MAX)
+    {
+        return _max(1,(m_level*2)+(static_cast<float>(m_level)*(static_cast<float>(m_mobdata[m_type].attackmult)/32.0)));
+    }
+    return 0;
+}
+
 int16_t Mob::GetMaxHealth() const
 {
     if(m_type>=0 && m_type<MobType::TYPE_MAX)
     {
-        return _max(1,static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0));
+        return _max(1,(m_level*2)+(static_cast<float>(Game::Instance().GetLevelMaxHealth(m_level))*(static_cast<float>(m_mobdata[m_type].healthmult)/128.0)));
     }
+    return 0;
+}
+
+int16_t Mob::GetArmor() const
+{
+    //return m_level;
     return 0;
 }
 
@@ -417,72 +436,4 @@ uint8_t Mob::GetDropFlags() const
         return m_mobdata[m_type].dropflags;
     }
     return 0;
-}
-
-uint8_t Mob::RandomItemTypeFromDropType(RandomMT &rand, uint8_t droptype) const
-{
-    uint8_t itemtype=0;
-    uint8_t typecount=0;
-    bool types[ItemData::TYPE_MAX];
-    for(int i=0; i<ItemData::TYPE_MAX; i++)
-    {
-        types[i]=false;
-    }
-    if((droptype & DROP_WEAPON)==DROP_WEAPON)
-    {
-        types[ItemData::TYPE_MELEEWEAPON]=true;
-        //types[ItemData::TYPE_PROJECTILEWEAPON]=true;
-        typecount+=1;
-    } 
-    if((droptype & DROP_ARMOR)==DROP_ARMOR)
-    {
-        types[ItemData::TYPE_SHIELD]=true;
-        types[ItemData::TYPE_HELMET]=true;
-        types[ItemData::TYPE_BODYARMOR]=true;
-        types[ItemData::TYPE_GAUNTLET]=true;
-        //types[ItemData::TYPE_LEGARMOR]=true;
-        types[ItemData::TYPE_BOOT]=true;
-        typecount+=5;
-    }
-    if((droptype & DROP_RING)==DROP_RING)
-    {
-        trace("not impelemented");
-        //types[ItemData::TYPE_RING]=true;
-        //typecount+=1;
-    }
-    if((droptype & DROP_AMULET)==DROP_AMULET)
-    {
-        trace("not impelemented");
-        //types[ItemData::TYPE_AMULET]=true;
-        //typecount+=1;
-    }
-    if((droptype & DROP_POTION)==DROP_POTION)
-    {
-        trace("not impelemented");
-        // potions not implemented yet
-        //types[ItemData::TYPE_MANAPOTION]=true;
-        //types[ItemData::TYPE_HEALTHPOTION]=true;
-        //types[ItemData::TYPE_EXPPOTION]=true;
-        //typecount+=3;
-    }
-
-    if(typecount>0)
-    {
-        int r=rand.Next()%typecount;
-        uint8_t count=0;
-        for(int i=0; i<ItemData::TYPE_MAX; i++)
-        {
-            if(types[i]==true)
-            {
-                count++;
-                if(count>r)
-                {
-                    itemtype=i;
-                    break;
-                }
-            }
-        }
-    }
-
-    return itemtype;
 }

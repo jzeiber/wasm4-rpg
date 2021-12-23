@@ -1,6 +1,9 @@
 #include "wasm4.h"
 #include "global.h"
 
+//debug
+#include "outputstringstream.h"
+
 void start()
 {
 	PALETTE[0]=0x472D3C;	// dark brown

@@ -34,7 +34,7 @@ void StateGameQuestJournal::StateChanged(const uint8_t prevstate, void *params)
     if(params)
     {
         m_gamedata=((GameData *)params);
-        for(int i=0; i<MAX_QUESTS; i++)
+        for(int32_t i=0; i<MAX_QUESTS; i++)
         {
             if(m_gamedata->m_quests[i].GetActive()==true)
             {
@@ -50,7 +50,7 @@ bool StateGameQuestJournal::HandleInput(const Input *input)
 {
     if(input->GamepadButtonPress(1,BUTTON_LEFT))
     {
-        for(int i=m_questidx-1; i>=0; i--)
+        for(int32_t i=m_questidx-1; i>=0; i--)
         {
             if(m_gamedata->m_quests[i].GetActive()==true)
             {
@@ -61,7 +61,7 @@ bool StateGameQuestJournal::HandleInput(const Input *input)
     }
     if(input->GamepadButtonPress(1,BUTTON_RIGHT))
     {
-        for(int i=m_questidx+1; i<MAX_QUESTS; i++)
+        for(int32_t i=m_questidx+1; i<MAX_QUESTS; i++)
         {
             if(m_gamedata->m_quests[i].GetActive()==true)
             {
@@ -140,7 +140,7 @@ void StateGameQuestJournal::Draw()
 
 bool StateGameQuestJournal::HavePreviousActiveQuest(const int8_t questidx) const
 {
-    for(int i=questidx-1; i>=0; i--)
+    for(int32_t i=questidx-1; i>=0; i--)
     {
         if(m_gamedata->m_quests[i].GetActive()==true)
         {
@@ -152,7 +152,7 @@ bool StateGameQuestJournal::HavePreviousActiveQuest(const int8_t questidx) const
 
 bool StateGameQuestJournal::HaveNextActiveQuest(const int8_t questidx) const
 {
-    for(int i=questidx+1; i<MAX_QUESTS; i++)
+    for(int32_t i=questidx+1; i<MAX_QUESTS; i++)
     {
         if(m_gamedata->m_quests[i].GetActive()==true)
         {

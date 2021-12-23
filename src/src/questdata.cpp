@@ -27,7 +27,7 @@ void QuestData::Reset()
     m_destx=0;
     m_desty=0;
     m_progress=0;
-    for(int i=0; i<6; i++)
+    for(int32_t i=0; i<6; i++)
     {
         m_data[i]=0;
     }
@@ -83,15 +83,55 @@ bool QuestData::Tutorial() const
     return GetFlag(FLAG_TUTORIAL);
 }
 
+void QuestData::SetCompleted(const bool completed)
+{
+    SetFlag(FLAG_COMPLETED,completed);
+}
+
+bool QuestData::GetCompleted() const
+{
+    return GetFlag(FLAG_COMPLETED);
+}
+
 int64_t QuestData::GetCurrentTargetWorldX() const
 {
     //TODO - different types of quests and their progress may have different targets
+    switch(m_type)
+    {
+    case TYPE_KILLAREAMONSTERS:
+        if(m_progress==m_data[0])   // killed all monsters - return to source for reward
+        {
+            return m_sourcex;
+        }
+        break;
+    case TYPE_DELIVERY:
+        if(m_progress==0 || GetCompleted()==true)
+        {
+            return m_sourcex;
+        }
+        break;
+    }
     return m_destx;
 }
 
 int64_t QuestData::GetCurrentTargetWorldY() const
 {
     //TODO - different types of quests and their progress may have different targets
+    switch(m_type)
+    {
+    case TYPE_KILLAREAMONSTERS:
+        if(m_progress==m_data[0])   // killed all monsters - return to source for reward
+        {
+            return m_sourcey;
+        }
+        break;
+    case TYPE_DELIVERY:
+        if(m_progress==0 || GetCompleted()==true)
+        {
+            return m_sourcey;
+        }
+        break;
+    }
     return m_desty;
 }
 
@@ -114,7 +154,7 @@ bool QuestData::WriteQuestData(void *data) const
     pos+=4;
     GameIO::write_uint8_t(&p[pos],m_progress);
     pos+=1;
-    for(int i=0; i<6; i++)
+    for(int32_t i=0; i<6; i++)
     {
         GameIO::write_uint8_t(&p[pos],m_data[i]);
         pos+=1;
@@ -141,7 +181,7 @@ bool QuestData::LoadQuestData(void *data)
     pos+=4;
     m_progress=GameIO::read_uint8_t(&p[pos]);
     pos+=1;
-    for(int i=0; i<6; i++)
+    for(int32_t i=0; i<6; i++)
     {
         m_data[i]=GameIO::read_uint8_t(&p[pos]);
         pos+=1;
@@ -168,11 +208,12 @@ bool QuestData::HasTargetLocation() const
     return false;
 }
 
-bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param)
+bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEventParam param, const int8_t idx)
 {
     if(GetActive()==true)
     {
         bool questcompleted=false;
+        bool questmessage=true;
         switch(eventtype)
         {
         case EVENT_PLAYERMOVE:
@@ -188,6 +229,23 @@ bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEvent
             {
                 questcompleted=true;
             }
+            // arrive at town and killed all monsters that was requested
+            if(m_type==TYPE_KILLAREAMONSTERS && m_sourcex==gamedata->m_playerworldx && m_sourcey==gamedata->m_playerworldy && GetCompleted()==true)
+            {
+                questcompleted=true;
+                questmessage=false;
+            }
+            // arrive at destination for delivery quest
+            if(m_type==TYPE_DELIVERY && m_destx==gamedata->m_playerworldx && m_desty==gamedata->m_playerworldy && m_progress==1)
+            {
+                // check if item in inventory and remove
+                int8_t slot=gamedata->QuestItemInInventorySlot(idx);
+                if(slot>=0)
+                {
+                    questcompleted=true;
+                    gamedata->m_inventory[slot].SetActive(false);
+                }
+            }
             break;
         case EVENT_ARRIVETOWN:
             if(m_type==TYPE_VISITANYTOWN)
@@ -201,14 +259,54 @@ bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEvent
                 questcompleted=true;
             }
             break;
+        case EVENT_KILLMOB:
+            if(m_type==TYPE_KILLAREAMONSTERS)
+            {
+                if(GetCompleted()==false)
+                {
+                    // really shold be monster coord, but player is close enough
+                    int64_t dx=_abs(gamedata->m_map.DeltaCoordinate(gamedata->m_playerworldx,m_destx));
+                    int64_t dy=_abs(gamedata->m_map.DeltaCoordinate(gamedata->m_playerworldy,m_desty));
+                    if(dx<=m_data[2] && dy<=m_data[2] && ++m_progress==m_data[0])
+                    {
+                        gamedata->AddGameMessage("Quest Completed!");
+                        gamedata->AddGameMessage("Visit village for reward");
+                        SetCompleted(true);
+                    }
+                }
+            }
         }
 
         if(questcompleted==true)
         {
             SetActive(false);
             gamedata->m_questscompleted++;
-            gamedata->AddGameMessage("Quest Completed!");
+            if(questmessage==true)
+            {
+                gamedata->AddGameMessage("Quest Completed!");
+            }
             QuestCache::Instance().RemoveCache(m_sourcex,m_sourcey);
+
+            if(m_data[1]!=0)
+            {
+                RandomMT rand;
+                rand.Seed(gamedata->m_ticks);
+                uint8_t itemtype=ItemData::RandomItemTypeFromDropType(rand,m_data[1]);
+                if(itemtype!=ItemData::TYPE_NONE)
+                {
+                    ItemData item;
+                    item.CreateRandom(rand,itemtype,ItemData::EQUIP_ANY,gamedata->m_playerlevel);
+                    int8_t gidx=gamedata->ClearAndGetGroundSlot();
+                    if(gidx>=0)
+                    {
+                        item.SetActive(true);
+                        gamedata->m_grounditem[gidx]=item;
+                        gamedata->m_grounditemlocation[gidx][0]=gamedata->m_playerworldx;
+                        gamedata->m_grounditemlocation[gidx][1]=gamedata->m_playerworldy;
+                        gamedata->AddGameMessage("Here is your reward");
+                    }
+                }
+            }
         }
 
         return true;
@@ -241,9 +339,17 @@ void QuestData::GetQuestGiverDescription(char *desc, const int16_t len)
         case TYPE_TRAVELAREA:
             ostr << "Travel close to the location marked on your map.";
             break;
+        case TYPE_KILLAREAMONSTERS:
+            ostr << "They need you to clear the surrounding area of monsters.";
+            break;
+        case TYPE_DELIVERY:
+            ostr << "They need you to deliver an item to another village.";
+            break;
         default:
             ostr << "????";
         }
+
+        ostr << "\n\nAccept?";
 
         strncpy(desc,ostr.Buffer(),len-1);
         desc[len-1]='\0';
@@ -297,6 +403,31 @@ void QuestData::GetDescription(char *desc, const int16_t len)
         case TYPE_ACCEPTQUESTS:
             ostr << "Accept " << static_cast<int32_t>(m_data[0]) << " quest" << (m_data[0]==1 ? "" : "s") << "\n";
             ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+            break;
+        case TYPE_KILLAREAMONSTERS:
+            ostr << "Kill " << static_cast<int32_t>(m_data[0]) << " monsters near the marked location\n";
+            ostr << "Remaining " << (m_data[0]-m_progress) << "\n";
+            if((m_data[0]-m_progress)==0)
+            {
+                ostr << "Return to village for reward\n";
+            }
+            break;
+        case TYPE_DELIVERY:
+            ostr << "Deliver " << ItemData::GetShortDescription(m_data[0]) << " to the location marked on your map\n";
+            if(m_progress==0)
+            {
+                ostr << "You need to pick up the " << ItemData::GetShortDescription(m_data[0]) << " from the village first\n";
+            }
+            else if(m_progress==1)
+            {
+                //ostr << "Deliver the " << ItemData::GetShortDescription(m_data[0]) << " to the destination\n";
+            }
+            /* - reward is given at destination location
+            else if(m_progress==2)
+            {
+                ostr << "Return to village for reward\n";
+            }
+            */
             break;
         default:
             ostr << "????";
@@ -361,7 +492,7 @@ bool QuestData::GetTargetLocationDirection(char *direction, const int16_t len, G
 
         ostr << "Direction ";
 
-        const float mpi8=M_PI_4/2;
+        constexpr float mpi8=M_PI_4/2;
         if(destang!=destang)
         {
             ostr << "Here";
