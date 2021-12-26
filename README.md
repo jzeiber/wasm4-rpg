@@ -13,9 +13,9 @@ https://jzeiber.github.io/wasm4-rpg/bundle/
 
 ## Controls
 
-Use the arrow keys/gamepad direction buttons to move around
-X/Gamepad button 1 to execute selection
-Z/Gamepad button 2 to change selection
+- Use the arrow keys/gamepad direction buttons to move around
+- X/Gamepad button 1 to execute selection
+- Z/Gamepad button 2 to change selection
 
 The main menu provides 2 "slots" to use to save 2 different games.  Use the arrow keys/gamepad direction button to select the slot and press X or gamepad button 1 to choose the slot.  Depending on if you already had a game saved, you can continue a game, start a new game, delete the game, or cancel.
 
