@@ -40,7 +40,10 @@ bool StateMainMenu::HandleInput(const Input *input)
     if(input->MouseX()>=16 && input->MouseX()<SCREEN_SIZE-16 && input->MouseY()>=53 && input->MouseY()<53+(30*3))
     {
         mouseoption=(input->MouseY()-53)/30;
-        m_selectedslot=mouseoption;
+        if(input->MouseMoved()==true)
+        {
+            m_selectedslot=mouseoption;
+        }
     }
 
     if(input->GamepadButtonPress(1,BUTTON_UP))
