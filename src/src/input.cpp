@@ -64,6 +64,11 @@ bool Input::MouseButtonClick(const uint8_t button) const
 	return (((m_mousebuttons >> (button-1)) & 0x1) == 0x1) && !(((m_lastmousebuttons >> (button-1)) & 0x1) == 0x1);
 }
 
+bool Input::MouseMoved() const
+{
+	return (m_lastmousex!=m_mousex || m_lastmousey!=m_mousey);
+}
+
 bool Input::GamepadButtonDown(const uint8_t gamepad, const uint8_t button) const
 {
 	if(gamepad<1 || gamepad>4)

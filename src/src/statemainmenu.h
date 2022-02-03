@@ -22,7 +22,6 @@ public:
 private:
     uint8_t m_changestate;
     int8_t m_selectedslot;
-    int8_t m_selectedsubslot;
     bool m_showdialog;
     bool m_showingdialog;
     Game *m_game;

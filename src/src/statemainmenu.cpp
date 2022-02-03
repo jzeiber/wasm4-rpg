@@ -8,7 +8,7 @@
 #include "textprinter.h"
 #include "lz4blitter.h"
 
-StateMainMenu::StateMainMenu():m_changestate(0),m_selectedslot(0),m_selectedsubslot(0),m_showdialog(false),m_game(nullptr)
+StateMainMenu::StateMainMenu():m_changestate(0),m_selectedslot(0),m_showdialog(false),m_game(nullptr)
 {
 
 }
@@ -35,6 +35,14 @@ void StateMainMenu::StateChanged(const uint8_t prevstate, void *params)
 
 bool StateMainMenu::HandleInput(const Input *input)
 {
+    int32_t mouseoption=-1;
+
+    if(input->MouseX()>=16 && input->MouseX()<SCREEN_SIZE-16 && input->MouseY()>=53 && input->MouseY()<53+(30*3))
+    {
+        mouseoption=(input->MouseY()-53)/30;
+        m_selectedslot=mouseoption;
+    }
+
     if(input->GamepadButtonPress(1,BUTTON_UP))
     {
         m_selectedslot--;
@@ -51,11 +59,11 @@ bool StateMainMenu::HandleInput(const Input *input)
             m_selectedslot=2;
         }
     }
-    if(input->GamepadButtonPress(1,BUTTON_1)==true && m_selectedslot>=0 && m_selectedslot<2)
+    if((input->GamepadButtonPress(1,BUTTON_1)==true || (input->MouseButtonClick(1)==true && mouseoption==m_selectedslot)) && m_selectedslot>=0 && m_selectedslot<2)
     {
         m_showdialog=true;
     }
-    if(input->GamepadButtonPress(1,BUTTON_1)==true && m_selectedslot==2)
+    if((input->GamepadButtonPress(1,BUTTON_1)==true || (input->MouseButtonClick(1)==true && mouseoption==m_selectedslot)) && m_selectedslot==2)
     {
         m_changestate=Game::STATE_SETTINGS;
     }

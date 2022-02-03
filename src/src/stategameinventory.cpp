@@ -37,6 +37,29 @@ void StateGameInventory::StateChanged(const uint8_t prevstate, void *params)
 bool StateGameInventory::HandleInput(const Input *input)
 {
 
+    int32_t mouseoption=-1;
+    if(input->MouseY()>=SCREEN_SIZE-16)
+    {
+        if(input->MouseX()/16>=0 && input->MouseX()/16<OPTION_MAX)
+        {
+            mouseoption=input->MouseX()/16;
+            if(input->MouseMoved()==true)
+            {
+                m_selectedmenu=input->MouseX()/16;
+            }
+        }
+    }
+
+    int32_t mouseitem=-1;
+    if(input->MouseY()>=16 && input->MouseY()<48)
+    {
+        mouseitem=(((input->MouseY()-16)/16)*10)+(input->MouseX()/16);
+    }
+    if(input->MouseButtonClick(1)==true && mouseitem>=0 && mouseitem<MAX_INVENTORY)
+    {
+        m_selecteditem=mouseitem;
+    }
+
     if(input->GamepadButtonPress(1,BUTTON_LEFT))
     {
         SelectItemOffset(-1);
@@ -54,19 +77,19 @@ bool StateGameInventory::HandleInput(const Input *input)
         SelectItemOffset(10);
     }
 
-    /*
-    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2))
+    int32_t clickmenu=-1;
+    if(input->GamepadButtonPress(1,BUTTON_1) || (input->MouseButtonClick(1)==true && mouseoption==m_selectedmenu))
+    {
+        clickmenu=m_selectedmenu;
+    }
+    
+    if(clickmenu==OPTION_EXIT)
     {
         m_changestate=Game::STATE_GAMEOVERWORLD;
     }
-    */
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_EXIT)
+    if(clickmenu==OPTION_DROP && m_gamedata->m_inventory[m_selecteditem].GetActive()==true)
     {
-        m_changestate=Game::STATE_GAMEOVERWORLD;
-    }
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_DROP && m_gamedata->m_inventory[m_selecteditem].GetActive()==true)
-    {
-        // TODO - can't drop quest items
+        // can't drop quest items
         if(m_gamedata->m_inventory[m_selecteditem].GetQuestItem()==false)
         {
             // only keep item on land
@@ -90,7 +113,7 @@ bool StateGameInventory::HandleInput(const Input *input)
             m_gamedata->AddGameMessage("Can't drop quest item");
         }
     }
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_MOVELEFT)
+    if(clickmenu==OPTION_MOVELEFT)
     {
         int8_t idx=m_selecteditem;
         SelectItemOffset(-1);
@@ -98,7 +121,7 @@ bool StateGameInventory::HandleInput(const Input *input)
         m_gamedata->m_inventory[idx]=m_gamedata->m_inventory[m_selecteditem];
         m_gamedata->m_inventory[m_selecteditem]=temp;
     }
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_MOVERIGHT)
+    if(clickmenu==OPTION_MOVERIGHT)
     {
         int8_t idx=m_selecteditem;
         SelectItemOffset(1);
@@ -106,11 +129,11 @@ bool StateGameInventory::HandleInput(const Input *input)
         m_gamedata->m_inventory[idx]=m_gamedata->m_inventory[m_selecteditem];
         m_gamedata->m_inventory[m_selecteditem]=temp;
     }
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_EQUIP)
+    if(clickmenu==OPTION_EQUIP)
     {
         m_gamedata->ToggleInventoryEquipped(m_selecteditem);
     }
-    if(input->GamepadButtonPress(1,BUTTON_1) && m_selectedmenu==OPTION_CONSUME)
+    if(clickmenu==OPTION_CONSUME)
     {
         if(m_gamedata->m_inventory[m_selecteditem].GetActive()==true && m_gamedata->m_inventory[m_selecteditem].GetConsumable()==true)
         {
@@ -280,7 +303,7 @@ void StateGameInventory::Draw()
                 tp.PrintWrapped(ostr.Buffer(),0,ypos,128,60,PALETTE_WHITE,TextPrinter::JUSTIFY_RIGHT);
 
                 //if(m_gamedata->m_inventory[m_selecteditem].GetEquipped()==false && equippedhealth>=0)
-                if(selecteditem.GetEquipped()==false)
+                if(selecteditem.GetEquipped()==false && hasequippedhealth)
                 {
                     ostr.Clear();
                     ostr << equippedhealth;
@@ -337,6 +360,30 @@ void StateGameInventory::Draw()
         }
         *DRAW_COLORS=((i==m_selectedmenu) ? ((PALETTE_BROWN << 4) | PALETTE_WHITE) : ((PALETTE_WHITE << 4) | PALETTE_BROWN));
         LZ4Blitter::Instance().Blit((i*16),SCREEN_SIZE-16,16,16,idxx,idxy,spriteitemFlags);
+    }
+
+    int32_t textx=SCREEN_SIZE-58;
+    int32_t texty=SCREEN_SIZE-(tp.LineHeight()+tp.LineHeight()/2);
+    switch(m_selectedmenu)
+    {
+    case OPTION_EXIT:
+        tp.Print("Close",textx,texty,5,PALETTE_WHITE);
+        break;
+    case OPTION_EQUIP:
+        tp.Print("Un/Equip",textx,texty,8,PALETTE_WHITE);
+        break;
+    case OPTION_CONSUME:
+        tp.Print("Consume",textx,texty,7,PALETTE_WHITE);
+        break;
+    case OPTION_DROP:
+        tp.Print("Drop",textx,texty,4,PALETTE_WHITE);
+        break;
+    case OPTION_MOVELEFT:
+        tp.Print("Move Left",textx,texty,9,PALETTE_WHITE);
+        break;
+    case OPTION_MOVERIGHT:
+        tp.Print("Move Right",textx,texty,10,PALETTE_WHITE);
+        break;
     }
 
 }

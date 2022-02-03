@@ -26,5 +26,6 @@ private:
 
     bool HavePreviousActiveQuest(const int8_t questidx) const;
     bool HaveNextActiveQuest(const int8_t questidx) const;
+    bool SetQuestOffset(const int32_t offset);
 
 };

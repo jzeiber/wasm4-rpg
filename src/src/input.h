@@ -16,6 +16,7 @@ public:
 	int16_t MouseY() const;
 	bool MouseButtonDown(const uint8_t button) const;
 	bool MouseButtonClick(const uint8_t button) const;
+	bool MouseMoved() const;
 	
 	bool GamepadButtonDown(const uint8_t gamepad, const uint8_t button) const;
 	bool GamepadButtonPress(const uint8_t gamepad, const uint8_t button) const;

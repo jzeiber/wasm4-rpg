@@ -48,30 +48,34 @@ void StateGameQuestJournal::StateChanged(const uint8_t prevstate, void *params)
 
 bool StateGameQuestJournal::HandleInput(const Input *input)
 {
-    if(input->GamepadButtonPress(1,BUTTON_LEFT))
+    bool clickhandled=false;
+    if(input->MouseButtonClick(1)==true)
     {
-        for(int32_t i=m_questidx-1; i>=0; i--)
+        if(input->MouseX()>=0 && input->MouseX()<SCREEN_SIZE && input->MouseY()>=40 && input->MouseY()<40+16)
         {
-            if(m_gamedata->m_quests[i].GetActive()==true)
+            if(input->MouseX()<=16 && HavePreviousActiveQuest(m_questidx)==true)
             {
-                m_questidx=i;
-                i=0;
+                SetQuestOffset(-1);
+                clickhandled=true;
             }
-        }
-    }
-    if(input->GamepadButtonPress(1,BUTTON_RIGHT))
-    {
-        for(int32_t i=m_questidx+1; i<MAX_QUESTS; i++)
-        {
-            if(m_gamedata->m_quests[i].GetActive()==true)
+            if(input->MouseX()>(SCREEN_SIZE-16) && HaveNextActiveQuest(m_questidx)==true)
             {
-                m_questidx=i;
-                i=MAX_QUESTS;
+                SetQuestOffset(1);
+                clickhandled=true;
             }
         }
     }
 
-    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2))
+    if(input->GamepadButtonPress(1,BUTTON_LEFT))
+    {
+        SetQuestOffset(-1);
+    }
+    if(input->GamepadButtonPress(1,BUTTON_RIGHT))
+    {
+        SetQuestOffset(1);
+    }
+
+    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2) || (input->MouseButtonClick(1)==true && clickhandled==false))
     {
         m_changestate=Game::STATE_GAMEOVERWORLD;
     }
@@ -156,6 +160,23 @@ bool StateGameQuestJournal::HaveNextActiveQuest(const int8_t questidx) const
     {
         if(m_gamedata->m_quests[i].GetActive()==true)
         {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool StateGameQuestJournal::SetQuestOffset(const int32_t offset)
+{
+    if(offset==0)
+    {
+        return true;
+    }
+    for(int32_t idx=m_questidx+offset; idx>=0 && idx<MAX_QUESTS; idx+=offset)
+    {
+        if(idx>=0 && idx<MAX_QUESTS && m_gamedata->m_quests[idx].GetActive()==true)
+        {
+            m_questidx=idx;
             return true;
         }
     }

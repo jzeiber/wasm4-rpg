@@ -16,10 +16,11 @@ https://jzeiber.github.io/wasm4-rpg/bundle/
 - Use the arrow keys/gamepad direction buttons to move around
 - X/Gamepad button 1 to execute selection
 - Z/Gamepad button 2 to change selection
+- There are currently limited mouse controls.  You can select some menu options and execute those actions with the left button.
 
 The main menu provides 2 "slots" to use to save 2 different games.  Use the arrow keys/gamepad direction button to select the slot and press X or gamepad button 1 to choose the slot.  Depending on if you already had a game saved, you can continue a game, start a new game, delete the game, or cancel.
 
-The settings menu provides a way to change the key/button press repeat rate during gameplay.  The repeat delay affects how long after you first press a key that the key will start repeating, and the repeat rate affects how quickly the press will repeat after that.
+The settings menu provides a way to change the key/button press repeat rate during gameplay.  The repeat delay affects how long after you first press a key that the key will start repeating, and the repeat rate affects how quickly the press will repeat after that.  You must currently use the gamepad or keyboard controls to change these settings.
 
 ## Limitations
 
@@ -40,7 +41,7 @@ The bottom of the screen contains a menu bar of actions/screens that can be sele
 
 - The save icon will save the current game.
 - The journal icon will open a screen that lists the current quests you have accepted.
-- The map icon will open a map with quest locations marked on it.
+- The map icon will open a map with quest locations marked on it.  You can right click the mouse to move the map to the location under the mouse.  You can middle click the mouse to center the map on your character.
 - The campfire icon will cause your character to rest as long as no monsters are around.  You may be interrupted during your rest by aggressive monsters if resting in the open.  Resting in a town is safest.
 - The character icon will open a screen with your character stats.
 - The loot icon will open your inventory.

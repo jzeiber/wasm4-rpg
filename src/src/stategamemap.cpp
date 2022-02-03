@@ -63,9 +63,25 @@ bool StateGameMap::HandleInput(const Input *input)
         m_y=m_gamedata->m_map.WrapCoordinate(m_y+dy);
     }
 
-    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2))
+    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2) || input->MouseButtonClick(1))
     {
         m_changestate=Game::STATE_GAMEOVERWORLD;
+    }
+
+    // offset map to location that was right clicked
+    if(input->MouseButtonClick(2))
+    {
+        int64_t offsetx=input->MouseX()-(SCREEN_SIZE/2);
+        int64_t offsety=input->MouseY()-(SCREEN_SIZE/2);
+        m_x=m_gamedata->m_map.WrapCoordinate(m_x+offsetx);
+        m_y=m_gamedata->m_map.WrapCoordinate(m_y+offsety);
+    }
+
+    // center back on player location
+    if(input->MouseButtonClick(3))
+    {
+        m_x=m_gamedata->m_playerworldx;
+        m_y=m_gamedata->m_playerworldy;
     }
 
     return true;

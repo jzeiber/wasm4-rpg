@@ -24,8 +24,31 @@ ModalDialog &ModalDialog::Instance()
 
 bool ModalDialog::HandleInput(const Input *input)
 {
+    int32_t mouseoption=-1;
     int32_t i;
-    if(input->GamepadButtonPress(1,BUTTON_1)==true)
+
+    if(input->MouseX()>=TextStartXPos() && input->MouseX()<TextStartXPos()+m_textwidth && input->MouseY()>=OptionsStartYPos()-2 && input->MouseY()<=OptionsStartYPos()+OptionsHeight())
+    {
+        const int32_t halfx=m_textwidth/2;
+        if(input->MouseX()<TextStartXPos()+halfx)
+        {
+            mouseoption=0;
+        }
+        else
+        {
+            mouseoption=1;
+        }
+        if(input->MouseY()>=OptionsStartYPos()-2+(m_font->LineHeight()+(m_font->LineHeight()/2)))
+        {
+            mouseoption+=2;
+        }
+        if(input->MouseMoved() && mouseoption>=0 && mouseoption<4 && m_options[mouseoption][0]!='\0')
+        {
+            m_selectedoption=mouseoption;
+        }
+    }
+
+    if(input->GamepadButtonPress(1,BUTTON_1)==true || (m_selectedoption==mouseoption && input->MouseButtonClick(1)==true))
     {
         m_closedialog=true;
     }

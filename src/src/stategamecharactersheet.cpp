@@ -42,7 +42,7 @@ bool StateGameCharacterSheet::HandleInput(const Input *input)
 
     }
 
-    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2))
+    if(input->GamepadButtonPress(1,BUTTON_1) || input->GamepadButtonPress(1,BUTTON_2) || input->MouseButtonClick(1)==true || input->MouseButtonClick(2)==true)
     {
         m_changestate=Game::STATE_GAMEOVERWORLD;
     }

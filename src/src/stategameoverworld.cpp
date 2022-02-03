@@ -180,7 +180,18 @@ bool StateGameOverworld::HandleInput(const Input *input)
         }
     }
 
-    if(input->GamepadButtonPress(1,BUTTON_1))
+    // find option under mouse - (or -1 if no option under mouse)
+    int32_t mouseoption=-1;
+    if(input->MouseY()>=SCREEN_SIZE-16)
+    {
+        mouseoption=input->MouseX()/16;
+        if(input->MouseMoved() && mouseoption>=0 && mouseoption<OPTION_MAX)
+        {
+            m_gamedata->m_selectedmenu=mouseoption;
+        }
+    }
+
+    if(input->GamepadButtonPress(1,BUTTON_1) || (input->MouseButtonClick(1)==true && mouseoption==m_gamedata->m_selectedmenu))
     {
         // choose menu item
         if(m_gamedata->m_selectedmenu==OPTION_SAVE)
