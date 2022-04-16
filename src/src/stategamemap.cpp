@@ -98,6 +98,7 @@ void StateGameMap::Update(const int ticks, Game *game)
 void StateGameMap::Draw()
 {
     LZ4Blitter::Instance().SetSheet((uint8_t **)spriteitem,spriteitemWidth,spriteitemRowHeight);
+    int16_t ploc[2]={-1,-1};
     int16_t dq[MAX_QUESTS][2];
     for(int i=0; i<MAX_QUESTS; i++)
     {
@@ -133,6 +134,11 @@ void StateGameMap::Draw()
                     dq[i][1]=y;
                 }
             }
+            if(wx==m_gamedata->m_playerworldx && wy==m_gamedata->m_playerworldy)
+            {
+                ploc[0]=x;
+                ploc[1]=y;
+            }
         }
     }
 
@@ -144,6 +150,13 @@ void StateGameMap::Draw()
             //blitSub(spriteitem,dq[i][0]-8,dq[i][1]-8,16,16,(3*16),(12*16),spriteitemWidth,spriteitemFlags);
             LZ4Blitter::Instance().Blit(dq[i][0]-8,dq[i][1]-8,16,16,3,12,spriteitemFlags);
         }
+    }
+
+    //draw player loc
+    if(ploc[0]!=-1 && ploc[1]!=-1)
+    {
+        *DRAW_COLORS=(PALETTE_WHITE << 4);
+        LZ4Blitter::Instance().Blit(ploc[0]-8,ploc[1]-8,16,16,8,12,spriteitemFlags);
     }
 
     *DRAW_COLORS=PALETTE_WHITE;

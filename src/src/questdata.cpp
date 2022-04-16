@@ -93,6 +93,26 @@ bool QuestData::GetCompleted() const
     return GetFlag(FLAG_COMPLETED);
 }
 
+void QuestData::SetDropIsItemType(const bool isitemtype)
+{
+    SetFlag(FLAG_DROPISITEMTYPE,isitemtype);
+}
+
+bool QuestData::GetDropIsItemType() const
+{
+    return GetFlag(FLAG_DROPISITEMTYPE);
+}
+
+void QuestData::SetDropIsTemplate(const bool istemplate)
+{
+    SetFlag(FLAG_DROPISTEMPLATE,istemplate);
+}
+
+bool QuestData::GetDropIsTemplate() const
+{
+    return GetFlag(FLAG_DROPISTEMPLATE);
+}
+
 int64_t QuestData::GetCurrentTargetWorldX() const
 {
     //TODO - different types of quests and their progress may have different targets
@@ -291,21 +311,35 @@ bool QuestData::HandleGameEvent(int16_t eventtype, GameData *gamedata, GameEvent
             {
                 RandomMT rand;
                 rand.Seed(gamedata->m_ticks);
-                uint8_t itemtype=ItemData::RandomItemTypeFromDropType(rand,m_data[1]);
-                if(itemtype!=ItemData::TYPE_NONE)
+                ItemData item;
+
+                if(GetDropIsTemplate()==true)
                 {
-                    ItemData item;
-                    item.CreateRandom(rand,itemtype,ItemData::EQUIP_ANY,gamedata->m_playerlevel);
-                    int8_t gidx=gamedata->ClearAndGetGroundSlot();
-                    if(gidx>=0)
+                    item.CreateFromTemplate(m_data[1],gamedata->m_playerlevel);
+                }
+                else
+                {
+                    uint8_t itemtype=m_data[1];
+                    if(GetDropIsItemType()==false)
                     {
-                        item.SetActive(true);
-                        gamedata->m_grounditem[gidx]=item;
-                        gamedata->m_grounditemlocation[gidx][0]=gamedata->m_playerworldx;
-                        gamedata->m_grounditemlocation[gidx][1]=gamedata->m_playerworldy;
-                        gamedata->AddGameMessage("Here is your reward");
+                        itemtype=ItemData::RandomItemTypeFromDropType(rand,m_data[1]);
+                    }
+                    if(itemtype!=ItemData::TYPE_NONE)
+                    {
+                        item.CreateRandom(rand,itemtype,ItemData::EQUIP_ANY,gamedata->m_playerlevel);
                     }
                 }
+
+                int8_t gidx=gamedata->ClearAndGetGroundSlot();
+                if(gidx>=0)
+                {
+                    item.SetActive(true);
+                    gamedata->m_grounditem[gidx]=item;
+                    gamedata->m_grounditemlocation[gidx][0]=gamedata->m_playerworldx;
+                    gamedata->m_grounditemlocation[gidx][1]=gamedata->m_playerworldy;
+                    gamedata->AddGameMessage("Here is your reward");
+                }
+
             }
         }
 

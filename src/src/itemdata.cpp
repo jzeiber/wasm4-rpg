@@ -101,6 +101,36 @@ void ItemData::ApplyTemplate(const uint8_t templateidx)
     }
 }
 
+void ItemData::CreateFromTemplate(const uint8_t templateidx, const int16_t level)
+{
+    if(templateidx<m_itemtemplatecount)
+    {
+        Reset();
+        ApplyTemplate(templateidx);
+        // attack / armor
+        if(GetType()==TYPE_MELEEWEAPON || GetType()==TYPE_PROJECTILEWEAPON)
+        {
+            m_data[0]=level;
+        }
+        if(GetType()==TYPE_SHIELD || GetType()==TYPE_HELMET || GetType()==TYPE_BODYARMOR || GetType()==TYPE_GAUNTLET || GetType()==TYPE_LEGARMOR || GetType()==TYPE_BOOT)
+        {
+            m_data[0]=_max(1,level/5);
+        }
+        if(GetAddArmor()==true)
+        {
+            m_data[0]=_max(1,_sqrt((level/10)));
+        }
+        if(GetAddMeleeAttack()==true)
+        {
+            m_data[0]=_max(1,_sqrt((level/10)));
+        }
+        if(GetAddHealth()==true)
+        {
+            m_data[0]=_max(1,level/5);
+        }
+    }
+}
+
 uint8_t ItemData::GetType() const
 {
     //return m_type;
@@ -460,6 +490,8 @@ bool ItemData::CreateRandom(RandomMT &rand, const uint8_t itemtype, const uint8_
                 total+=m_itemtemplate[i].probability;
                 if(total>r)
                 {
+                    CreateFromTemplate(i,level);
+                    /*  moved into CreateFromTemplate
                     Reset();
                     ApplyTemplate(i);
                     // attack / armor
@@ -483,6 +515,7 @@ bool ItemData::CreateRandom(RandomMT &rand, const uint8_t itemtype, const uint8_
                     {
                         m_data[0]=_max(1,level/5);
                     }
+                    */
                     return true;
                 }
             }

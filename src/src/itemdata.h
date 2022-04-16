@@ -92,6 +92,7 @@ public:
     bool GetQuestItem() const;
     void SetQuestItem(const bool questitem);
 
+    void CreateFromTemplate(const uint8_t templateidx, const int16_t level);
     void SetTemplate(const uint8_t templateidx);    // sets only template index
     void ApplyTemplate(const uint8_t templateidx);  // sets template and applies default template flags
 

@@ -11,11 +11,13 @@ public:
 
     enum Flags
     {
-        FLAG_ACTIVE   =0b00000001,
-        FLAG_SELECTED =0b00000010,
-        FLAG_SOURCELOC=0b00000100,
-        FLAG_TUTORIAL =0b00001000,
-        FLAG_COMPLETED=0b00010000
+        FLAG_ACTIVE         =0b00000001,
+        FLAG_SELECTED       =0b00000010,
+        FLAG_SOURCELOC      =0b00000100,
+        FLAG_TUTORIAL       =0b00001000,
+        FLAG_COMPLETED      =0b00010000,
+        FLAG_DROPISITEMTYPE =0b00100000,
+        FLAG_DROPISTEMPLATE =0b01000000
     };
 
     enum QuestType
@@ -29,6 +31,7 @@ public:
         TYPE_VISITANYTOWN=6,
         TYPE_ACCEPTQUESTS=7,
         TYPE_RETRIEVEITEM=8
+        // TYPE_KILLMONSTER
         // TYPE_PATROL
     };
 
@@ -52,6 +55,12 @@ public:
 
     void SetCompleted(const bool completed);
     bool GetCompleted() const;
+
+    void SetDropIsItemType(const bool isitemtype);
+    bool GetDropIsItemType() const;
+
+    void SetDropIsTemplate(const bool istemplate);
+    bool GetDropIsTemplate() const;
 
     bool HasTargetLocation() const;
     int64_t GetCurrentTargetWorldX() const;

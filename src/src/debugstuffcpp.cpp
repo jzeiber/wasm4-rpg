@@ -3,5 +3,5 @@
 
 void operator delete(void * p) // or delete(void *, std::size_t)
 {
-  trace("operator delete(void *)");
+  //trace("operator delete(void *)");
 }

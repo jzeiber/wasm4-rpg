@@ -305,6 +305,8 @@ void GameData::SetupNewGame(const uint64_t seed)
     quest->m_type=QuestData::TYPE_VISITANYTOWN;
     quest->SetHasSourceLocation(false);
     quest->SetTutorial(true);
+    quest->m_data[1]=ItemData::TYPE_BOOT;
+    quest->SetDropIsItemType(true);
     
     quest=&m_quests[2];
     quest->SetActive(true);
@@ -317,45 +319,71 @@ void GameData::SetupNewGame(const uint64_t seed)
     quest->m_type=QuestData::TYPE_ACCEPTQUESTS;
     quest->SetHasSourceLocation(false);
     quest->SetTutorial(true);
+    quest->m_data[1]=ItemData::TYPE_HELMET;
+    quest->SetDropIsItemType(true);
 
 
     // basic sword
 
+    /*
     m_inventory[0].SetActive(true);
     m_inventory[0].SetEquipped(true);
     m_inventory[0].SetEquipable(true);
     m_inventory[0].SetTemplate(1);
     m_inventory[0].m_data[0]=1; // damage
+    */
+    m_inventory[0].CreateFromTemplate(1,1);
+    m_inventory[0].SetActive(true);
+    m_inventory[0].SetEquipped(true);
 
     // basic shield
 
+    /*
     m_inventory[1].SetActive(true);
     m_inventory[1].SetEquipped(true);
     m_inventory[1].SetEquipable(true);
     m_inventory[1].SetTemplate(19);
     m_inventory[1].m_data[0]=1; // armor
+    */
+    m_inventory[1].CreateFromTemplate(19,1);
+    m_inventory[1].SetActive(true);
+    m_inventory[1].SetEquipped(true);
     
     // basic armor
 
+    /*
     m_inventory[2].SetActive(true);
     m_inventory[2].SetEquipped(true);
     m_inventory[2].SetEquipable(true);
     m_inventory[2].SetTemplate(42);
     m_inventory[2].m_data[0]=1; // armor
+    */
+    m_inventory[2].CreateFromTemplate(42,1);
+    m_inventory[2].SetActive(true);
+    m_inventory[2].SetEquipped(true);
     
     // basic gauntlets
     
+    /*
     m_inventory[3].SetActive(true);
     m_inventory[3].SetEquipped(true);
     m_inventory[3].SetEquipable(true);
     m_inventory[3].SetTemplate(32);
     m_inventory[3].m_data[0]=1; // armor
+    */
+    m_inventory[3].CreateFromTemplate(32,1);
+    m_inventory[3].SetActive(true);
+    m_inventory[3].SetEquipped(true);
     
     // health potion
     
+    /*
     m_inventory[4].SetActive(true);
     m_inventory[4].SetConsumable(true);
     m_inventory[4].SetTemplate(51);
+    */
+    m_inventory[4].CreateFromTemplate(51,1);
+    m_inventory[4].SetActive(true);
 
     /*
     m_grounditem[0].Reset();
