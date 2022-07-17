@@ -18,7 +18,7 @@ Input::~Input()
 {
 
 }
-	
+
 Input &Input::Instance()
 {
 	static Input i;
@@ -56,12 +56,12 @@ int16_t Input::MouseY() const
 
 bool Input::MouseButtonDown(const uint8_t button) const
 {
-	return ((m_mousebuttons >> (button-1)) & 0x1) == 0x1;
+	return ((m_mousebuttons & button) == button);
 }
 
 bool Input::MouseButtonClick(const uint8_t button) const
 {
-	return (((m_mousebuttons >> (button-1)) & 0x1) == 0x1) && !(((m_lastmousebuttons >> (button-1)) & 0x1) == 0x1);
+	return (((m_mousebuttons & button)==button) && !((m_lastmousebuttons & button) == button));
 }
 
 bool Input::MouseMoved() const

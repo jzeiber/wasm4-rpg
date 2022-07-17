@@ -207,19 +207,23 @@ Tile Map::ComputeTile(const uint64_t worldx, const uint64_t worldy)
 		if(placedfeature==false && h>=0.001 && h<0.5)
 		{
 			const double v=m_rand.NextDouble();
-			if(v<0.025)
+			//if(v<0.025)
+			if(v<0.20)
 			{
 				t.SetFeature(Tile::FEATURE_GRASS1);
 			}
-			else if(v<0.05)
+			//else if(v<0.05)
+			else if(v<0.4)
 			{
 				t.SetFeature(Tile::FEATURE_GRASS2);
 			}
-			else if(v<0.075)
+			//else if(v<0.075)
+			else if(v<0.60)
 			{
 				t.SetFeature(Tile::FEATURE_GRASS3);
 			}
-			else if(v<0.1)
+			//else if(v<0.1)
+			else if(v<0.80)
 			{
 				t.SetFeature(Tile::FEATURE_GRASS4);
 			}

@@ -211,7 +211,7 @@ private:
 /*50 */ {TYPE_BOOT            , FLAG_EQUIPABLE           , 0                                        , EQUIP_FOOT          , 10,  91, "Boots"    , "A pair of boots"     },
         {TYPE_HEALTHPOTION    , FLAG_CONSUMABLE          , 0                                        , EQUIP_NONE          , 20, 160, "Health Potion", "A health potion that restores up to 50% of your health" },
         {TYPE_AMULET          , FLAG_EQUIPABLE           , TEMPLATE_ADDARMOR                        , EQUIP_NECK          ,  1, 100, "Amulet of Defense", "An amulet that adds armor" },
-        {TYPE_AMULET          , FLAG_EQUIPABLE           , TEMPLATE_ADDMELEEATTACK                  , EQUIP_NECK          ,  1, 101, "Amulet of Power", "An amulet that adds attack strengh" },
+        {TYPE_AMULET          , FLAG_EQUIPABLE           , TEMPLATE_ADDMELEEATTACK                  , EQUIP_NECK          ,  1, 101, "Amulet of Power", "An amulet that adds attack strength" },
         {TYPE_AMULET          , FLAG_EQUIPABLE           , TEMPLATE_ADDHEALTH                       , EQUIP_NECK          ,  1, 102, "Amulet of Vitality", "An amulet that increases total hit points"},
         {TYPE_AMULET          , FLAG_EQUIPABLE           , TEMPLATE_ADDHEALTH|TEMPLATE_RESTFULSLEEP , EQUIP_NECK          ,  1, 103, "Amulet of Protection", "Allows you to rest without being interrupted by monsters, but reduces your hit points"},
         {TYPE_MISC            , 0                        , 0                                        , EQUIP_NONE          , 10, 176, "Belt"     , "A belt"              },

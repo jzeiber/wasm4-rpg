@@ -138,10 +138,16 @@ private:
 	static constexpr DrawData m_drawdata[]=
 	{	/*uint8_t spriteidxx, uint8_t spriteidxy, uint32_t blitcolors, uint8_t blitflags */
 		{0,0,0,0},
+		/*
 		{1 ,0 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS1
 		{5 ,0 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS2
 		{6 ,0 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS3
 		{7 ,0 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS4
+		*/
+		{0 ,9 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS1
+		{1 ,9 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS2
+		{2 ,9 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS3
+		{3 ,9 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_GRASS4
 		{5 ,3 ,PALETTE_BROWN << 4 ,BLIT_1BPP},	// FEATURE_TOWN1
 		{6 ,3 ,PALETTE_BROWN << 4 ,BLIT_1BPP},	// FEATURE_TOWN2
 		{5 ,6 ,PALETTE_WHITE << 4 ,BLIT_1BPP},	// FEATURE_WATER1
