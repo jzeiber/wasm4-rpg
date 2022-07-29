@@ -15,6 +15,7 @@
 #include "drawfuncs.h"
 #include "lz4blitter.h"
 #include "outputstringstream.h"
+#include "miscfuncs.h"
 
 StateGameOverworld::StateGameOverworld():m_gamedata(nullptr),m_cursormode(MODE_MOVE),m_cursorx(0),m_cursory(0),m_changestate(-1),m_showtowndialog(false),m_showingtowndialog(false),m_showexitdialog(false),m_showingexitdialog(false),m_savegame(false),m_towndialogtype(0),m_lastmovetick(0),m_lastrepeattick(0),m_tick(0)
 {
@@ -208,16 +209,19 @@ bool StateGameOverworld::HandleInput(const Input *input)
         }
         if(m_gamedata->m_selectedmenu==OPTION_REST)
         {
-            if(m_gamedata->HostileWithinArea(m_gamedata->m_playerworldx-4,m_gamedata->m_playerworldy-4,m_gamedata->m_playerworldx+4,m_gamedata->m_playerworldy+4)==false)
+			// can rest if in town unless mob is immediately adjacent to player
+			const bool intown=m_gamedata->WorldLocationTown(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy);
+			const bool mobnexttoplayer=m_gamedata->HostileWithinArea(m_gamedata->m_playerworldx-1,m_gamedata->m_playerworldy-1,m_gamedata->m_playerworldx+1,m_gamedata->m_playerworldy+1);
+            if(mobnexttoplayer==false && (intown==true || m_gamedata->HostileWithinArea(m_gamedata->m_playerworldx-4,m_gamedata->m_playerworldy-4,m_gamedata->m_playerworldx+4,m_gamedata->m_playerworldy+4)==false))
             {
-                // TODO - potential to interrupt with mob (rest in town no chance of interrupt)
+                // potential to interrupt with mob (rest in town no chance of interrupt)
                 RandomMT rand;
                 rand.Seed(m_tick);
                 if(m_gamedata->m_playerhealth==m_gamedata->GetPlayerMaxHealth())
                 {
                     m_gamedata->AddGameMessage("Health already full");
                 }
-                else if(m_gamedata->WorldLocationTown(m_gamedata->m_playerworldx,m_gamedata->m_playerworldy)==true || m_gamedata->HasItemWithProperties(0,ItemData::TEMPLATE_RESTFULSLEEP,true) || rand.Next()%5>0)
+                else if(intown==true || m_gamedata->HasItemWithProperties(0,ItemData::TEMPLATE_RESTFULSLEEP,true) || rand.Next()%5>0)
                 {
                     m_gamedata->AddGameMessage("Rested");
                     m_gamedata->m_playerhealth=m_gamedata->GetPlayerMaxHealth();
@@ -790,7 +794,7 @@ void StateGameOverworld::DrawExpBar(const int16_t x, const int16_t y, const int1
 
 void StateGameOverworld::DrawMobHealth(const int16_t x, const int16_t y, const int16_t health, const int16_t maxhealth)
 {
-    const int16_t hpw=(static_cast<float>(health)/static_cast<double>(maxhealth))*14.0f;
+    const int16_t hpw=_max(1,(static_cast<float>(health)/static_cast<double>(maxhealth))*14.0f);
     *DRAW_COLORS=(PALETTE_WHITE << 4) | PALETTE_WHITE;
     rect(x,y-2,16,3);
     *DRAW_COLORS=(PALETTE_GREEN << 4) | PALETTE_GREEN;
